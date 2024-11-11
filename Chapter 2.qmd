@@ -1,15 +1,20 @@
 ---
 title: "Chapter 2 - Working with Text Data"
 format: html
+execute:
+    error: true
 ---
 
 # 2 - Working with Text Data
 
 ## 2.1 Understanding word embeddings
+
 We need to understand that LLMs cannot process raw text directly and instead need to be represented with continuous-valued vectors. The conversion is done through embeddings which take in the raw data, in the form of video, audio, text, etc. and converts them to a dense vector of continous values, which are then used in deep learning.
 
 ## 2.2 Tokenizing text
-Before creating embeddings however, text data requires a preprocessing step to create tokens which is how we split input text up into pieces for an embedding layer. To summarize, we split an input text into individual tokens, which are either words or special characters, such as punctuation characters. These are later converted into token IDs (like a lookup table) which are then used to create embeddings. 
+
+Before creating embeddings however, text data requires a preprocessing step to create tokens which is how we split input text up into pieces for an embedding layer. To summarize, we split an input text into individual tokens, which are either words or special characters, such as punctuation characters. These are later converted into token IDs (like a lookup table) which are then used to create embeddings.
+
 ```{python}
 with open('the_verdict.txt', 'r',encoding='utf_8') as f:
     raw_text = f.read()
@@ -18,11 +23,12 @@ print('Total number of characters:', len(raw_text))
 print(raw_text[:99])
 ```
 
-Goal is to tokenize this 20479 character short story. 
+Goal is to tokenize this 20479 character short story.
 
-Then turn into embeddings for LLM training. 
+Then turn into embeddings for LLM training.
 
 So use regex to get a list of individual words, whitespaces, and punctuation characters
+
 ```{python}
 import re
 
@@ -31,23 +37,25 @@ result = re.split(r'(\s)',text)
 print(result)
 ```
 
-Now split on whitespaces and commas (\s), and periods ([,.])
+Now split on whitespaces and commas (\s), and periods (\[,.\])
+
 ```{python}
 result = re.split(r'([,.]|\s)',text)
 print(result)
 ```
 
 We could remove whitespaces so we just have words, commas, and periods
+
 ```{python}
 result = [item for item in result if item.strip()]
 print(result)
 ```
 
-:::{.callout-note}
+::: callout-note
 Potential experiment is to keep white spaces in the tokenizer and see the differences in model output. Think about how picky coding languages are when it comes to spacing!
 :::
 
-So now modify the tokenization scheme to work on other types of punction, such as question marks, quotation marks, and the double dashes shown in the first 100 characters. 
+So now modify the tokenization scheme to work on other types of punction, such as question marks, quotation marks, and the double dashes shown in the first 100 characters.
 
 ```{python}
 text = 'Hello, world. Is this-- a test?'
@@ -57,6 +65,7 @@ print(result)
 ```
 
 Now apply to the entire short story
+
 ```{python}
 preprocessed = re.split(r'([,.:;?_!"()\']|--|\s)',raw_text)
 preprocessed = [item.strip() for item in preprocessed if item.strip()]
@@ -65,7 +74,8 @@ print(preprocessed[:30])
 ```
 
 ## 2.3 Converting tokens into token IDs
-We now take these tokens which are a Python string and convert them to an integer representation to produce token IDs. An intermediate step before going to embedding vectors. This mapping from tokens to token IDs requires a ``vocabulary''. 
+
+We now take these tokens which are a Python string and convert them to an integer representation to produce token IDs. An intermediate step before going to embedding vectors. This mapping from tokens to token IDs requires a \`\`vocabulary''.
 
 ```{python}
 all_words = sorted(set(preprocessed)) # Get all unique words
@@ -73,7 +83,8 @@ vocab_size = len(all_words)
 print(vocab_size)
 ```
 
-Let's show some of this lookup, it'll be a perfect use of a dictionary data type. 
+Let's show some of this lookup, it'll be a perfect use of a dictionary data type.
+
 ```{python}
 vocab = {token:integer for integer, token in enumerate(all_words)}
 for i, item in enumerate(vocab.items()):
@@ -82,11 +93,11 @@ for i, item in enumerate(vocab.items()):
         break
 ```
 
-:::{.callout-tip}
+::: callout-tip
 We will use an inverse of this to go from our token IDs back to the original words!
 :::
 
-Let's create a complete tokenizer class which can go both directions, `encode` method (string-to-integer) and `decode` (integer-to-string) method. 
+Let's create a complete tokenizer class which can go both directions, `encode` method (string-to-integer) and `decode` (integer-to-string) method.
 
 ```{python}
 class SimpleTokenizerV1:
@@ -112,22 +123,21 @@ class SimpleTokenizerV1:
 
 ```
 
-* `__init__: ` This is the constructor method that initializes the class. It takes vocab as an argument.
-    +  `self.str_to_int:`  Stores the vocabulary dictionary where keys are strings (tokens) and values are integers (token IDs).
-    + `self.int_to_str:` Creates an inverse dictionary where keys are token IDs and values are the original strings (tokens).
+-   `__init__:` This is the constructor method that initializes the class. It takes vocab as an argument.
+    -   `self.str_to_int:` Stores the vocabulary dictionary where keys are strings (tokens) and values are integers (token IDs).
+    -   `self.int_to_str:` Creates an inverse dictionary where keys are token IDs and values are the original strings (tokens).
+-   `encode:` This method processes input text into token IDs.
+    -   `re.split(r'([,.:;?_!"()\']|--|\s)', text):` Splits the text into words and punctuation based on the specified regular expression pattern.
+    -   `[item.strip() for item in preprocessed if item.strip()]:` Strips whitespace from each item and removes empty strings.
+    -   `[self.str_to_int[s] for s in preprocessed]:` Converts each token in the preprocessed list to its corresponding token ID using the str_to_int dictionary.
+    -   `return ids:` Returns the list of token IDs.
+-   `decode:` This method converts token IDs back to text.
+    -   `" ".join([self.int_to_str[i] for i in ids]):` Joins the tokens corresponding to the token IDs into a single string with spaces in between.
+    -   `re.sub(r'\s+([,.:;?_!"()\'])', r'\1', text):` Removes spaces before punctuation marks.
+    -   `return text:` Returns the reconstructed text.
 
-* `encode:` This method processes input text into token IDs.
-    + `re.split(r'([,.:;?_!"()\']|--|\s)', text):` Splits the text into words and punctuation based on the specified regular expression pattern.
-    + `[item.strip() for item in preprocessed if item.strip()]:` Strips whitespace from each item and removes empty strings.
-    + `[self.str_to_int[s] for s in preprocessed]:` Converts each token in the preprocessed list to its corresponding token ID using the str_to_int dictionary.
-    + `return ids:` Returns the list of token IDs.
+### Example
 
-*  `decode:` This method converts token IDs back to text.
-    + `" ".join([self.int_to_str[i] for i in ids]):` Joins the tokens corresponding to the token IDs into a single string with spaces in between.
-    + `re.sub(r'\s+([,.:;?_!"()\'])', r'\1', text):` Removes spaces before punctuation marks.
-    + `return text:` Returns the reconstructed text.
-
-### Example 
 ```{python}
 vocab = {'hello': 1, 'world': 2, ',': 3}
 tokenizer = SimpleTokenizerV1(vocab)
@@ -157,24 +167,27 @@ The code above prints the following token IDs followed by the code below for the
 print(tokenizer.decode(ids))
 ```
 
-We can apply it to other text as well but be careful if any words are not in our vocab
+We can apply it to other text as well but be careful if any words are not in our vocab. This will cause an error!
+
 ```{python}
 text = 'Hello, do you like tea?'
 print(tokenizer.encode(text))
 ```
 
-
 ## 2.4 Adding special context tokens
-This is how you will handle unknown words, but al;so to identify the end of the text. 
+
+This is how you will handle unknown words, but also to identify the end of the text.
+
 ```{python}
 all_tokens = sorted(list(set(preprocessed)))
-all_tokens.extend(['<|endoftext|>','<|unk|>'])
+all_tokens.extend(['<|endoftext|>','<|unk|>']) # Add to vocab
 vocab = {token:integer for integer, token in enumerate(all_tokens)}
 
 print(len(vocab.items()))
 ```
 
 The new vocab has increased by two!
+
 ```{python}
 for i, item in enumerate(list(vocab.items())[-5:]):
     print(item)
@@ -205,3 +218,69 @@ class SimpleTokenizerV2:
         text = re.sub(r'\s+([,.?_!"()\'])', r'\1', text)
         return text
 ```
+
+Now let's try the new tokenzier out on two independent and unrelated sentances that are concacted togther.
+
+```{python}
+text1 = 'Hello, do you like tea?'
+text2 = 'In the sunlit terraces of the palace.'
+text = ' <|endoftext|> '.join([text1,text2])
+print(text)
+```
+
+Let's tokenize!
+
+```{python}
+tokenizer = SimpleTokenizerV2(vocab)
+print(tokenizer.encode(text))
+```
+
+And detokenize to check!
+
+```{python}
+print(tokenizer.decode(tokenizer.encode(text)))
+```
+
+Depending on the LLM, some researchers implement additional special tokens such as:
+
+-   `[BOS]` *(beginning of sequence)*-- This token marks the start of a text.
+
+-   `[EOS]` *(end of sequence)*-- This token is positioned at the end of a text and is especially useful when concatenating multiple unrelated texts, similar to `<|endoftext|>`
+
+-   `[PAD]` *(padding)*-- When training LLMs with batch sizes larger than one, the batch might contain texts of varying lengths. To ensure all texts have the same length, the shorter texts are extended or "padded": using the *`[PAD]`* token, up to the length of the longest text in the batch.
+
+The tokenizer used for the GPT models does not need any of these tokens; it only uses an `<|endoftext|>` token for simplicity. `<|endoftext|>` is analogous to the `[EOS]` token. `<|endoftext|>` is also useful for padding. However, when training on batched inputs, we typically use a mask, meaning we don't attend to padded tokens. Therefore the specific token chosen for padding becomes inconsequential.
+
+Moreover, the tokenizer used for GPT models also doesn't use an `<|unk|>` token for out-of-vocabularly words. Instead, GPT models use a *byte pair encoding* tokenizer, which breaks words down into subword units. 
+
+## 2.5 Byte pair encoding (BPE)
+BPE tokenizer was used in GPT-2 and GPT-3. Since it's a bit complicated, we will use an open source library called [tiktoken](https://github.com/openai/tiktoken) which implements the BPE algorithm efficienctly in Rust.
+
+```{python}
+from importlib.metadata import version
+import tiktoken
+print('tiktoken version:', version('tiktoken'))
+```
+
+Once installed, we can instatiate the BPE tokenizer from tiktoken as follows:
+
+```{python}
+tokenizer = tiktoken.get_encoding('gpt2')
+```
+
+The usage of this tokenizer is very similar to the `SimpleTokenizerV2` we implemented previously with an `encode` method:
+
+```{python}
+text = (
+    "Hello, do you like tea? <|endoftext|> In the sunlit terraces"
+     "of someunknownPlace."
+ )
+integers = tokenizer.encode(text,allowed_special = {'<|endoftext|>'})
+print(integers)
+ ```
+ Which we can convert back to text with a `decode` method:
+
+ ```{python}
+ strings = tokenizer.decode(integers)
+ print(strings)
+ ```
