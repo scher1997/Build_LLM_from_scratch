@@ -284,3 +284,19 @@ print(integers)
  strings = tokenizer.decode(integers)
  print(strings)
  ```
+Two things about this. First, `<|endoftext|>` is a relatively large token ID at `50256`. The BPE tokenizer actually has a total vocabularly size of 50,257, with `<|endoftext|>` being the largest token ID.
+
+Second, the BPE tokenizer encodes and decodes unknown words, such as `someunknownPlace` correctly. The BPE tokenizer can handle any uknown word. The algorithm underlying BPE breaks down words that aren't in its predefined vocabularly into smaller subword units or even individual characters, enabling it to handle out-of-vocabularly words. Which means it can process any text, even if it contains words that were not present in the training data. 
+
+::: {.callout-note collapse="true"}
+## Exercise 2.1 Byte pair encoding of unkown words
+
+Try the BPE tokenizer from the tiktoken library on the unknown words "Akwirw ier" and print the individual token IDs. Then, call the decode function on each of the resulting  integers in this list to reproduce the mapping shown in figure 2.11. Lastly, call the  decode method on the token IDs to check whether it can reconstruct the original input, "Akwirw ier"
+
+```{python}
+print(tokenizer.encode('Akwirw ier'))
+print(tokenizer.decode(tokenizer.encode('Akwirw ier')))
+```
+:::
+
+## 2.6 Data sampling with a sliding window
