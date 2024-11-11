@@ -272,18 +272,18 @@ The usage of this tokenizer is very similar to the `SimpleTokenizerV2` we implem
 
 ```{python}
 text = (
-    "Hello, do you like tea? <|endoftext|> In the sunlit terraces"
-     "of someunknownPlace."
- )
+    "Hello, do you like tea? <|endoftext|> In the sunlit terraces of someunknownPlace.")
 integers = tokenizer.encode(text,allowed_special = {'<|endoftext|>'})
 print(integers)
- ```
- Which we can convert back to text with a `decode` method:
+```
 
- ```{python}
- strings = tokenizer.decode(integers)
- print(strings)
- ```
+Which we can convert back to text with a `decode` method:
+
+```{python}
+strings = tokenizer.decode(integers)
+print(strings)
+```
+
 Two things about this. First, `<|endoftext|>` is a relatively large token ID at `50256`. The BPE tokenizer actually has a total vocabularly size of 50,257, with `<|endoftext|>` being the largest token ID.
 
 Second, the BPE tokenizer encodes and decodes unknown words, such as `someunknownPlace` correctly. The BPE tokenizer can handle any uknown word. The algorithm underlying BPE breaks down words that aren't in its predefined vocabularly into smaller subword units or even individual characters, enabling it to handle out-of-vocabularly words. Which means it can process any text, even if it contains words that were not present in the training data. 
@@ -291,12 +291,16 @@ Second, the BPE tokenizer encodes and decodes unknown words, such as `someunknow
 ::: {.callout-note collapse="true"}
 ## Exercise 2.1 Byte pair encoding of unkown words
 
-Try the BPE tokenizer from the tiktoken library on the unknown words "Akwirw ier" and print the individual token IDs. Then, call the decode function on each of the resulting  integers in this list to reproduce the mapping shown in figure 2.11. Lastly, call the  decode method on the token IDs to check whether it can reconstruct the original input, "Akwirw ier"
+Try the BPE tokenizer from the tiktoken library on the unknown words "Akwirw ier" and print the individual token IDs. Then, call the decode function on each of the resulting  integers in this list. Lastly, call the  decode method on the token IDs to check whether it can reconstruct the original input, "Akwirw ier"
 
 ```{python}
 print(tokenizer.encode('Akwirw ier'))
+for individual_token in tokenizer.encode('Akwirw ier'):
+    print(tokenizer.decode_single_token_bytes(individual_token))
+    # b in front of strings indicates that the strings are byte strings.
 print(tokenizer.decode(tokenizer.encode('Akwirw ier')))
 ```
+
 :::
 
 ## 2.6 Data sampling with a sliding window
