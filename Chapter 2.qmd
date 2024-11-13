@@ -170,8 +170,8 @@ print(tokenizer.decode(ids))
 We can apply it to other text as well but be careful if any words are not in our vocab. This will cause an error!
 
 ```{python}
-text = 'Hello, do you like tea?'
-print(tokenizer.encode(text))
+# text = 'Hello, do you like tea?'
+# print(tokenizer.encode(text))
 ```
 
 ## 2.4 Adding special context tokens
@@ -304,3 +304,76 @@ print(tokenizer.decode(tokenizer.encode('Akwirw ier')))
 :::
 
 ## 2.6 Data sampling with a sliding window
+
+Let's implement a data loader that fetches the input-target pairs from the training dataset using a sliding window approach. Basically since the next word is always being predicted the window includes all the text "it has seen", then receieves the next word for the prediction, then at the next iteration that predicted word is revealed and added to the input window.
+
+```{python}
+with open('the_verdict.txt','r',encoding='utf-8') as f:
+    raw_text = f.read()
+
+enc_text = tokenizer.encode(raw_text)
+print(len(enc_text))
+# Remove the first 50 tokens from the dataset for demostration purposes. 
+enc_sample = enc_text[50:]
+```
+
+Easiest way to create the input-target pairs for the next-word prediction task is to create two variables. It mirrors traditional supervised learning of having a variable `x` and a response `y`.
+
+```{python}
+context_size = 4 # The context size determines how many tokens are in the input
+x = enc_sample[:context_size]
+y = enc_sample[1:context_size+1]
+print(f'x: {x}')
+print(f'y:      {y}')
+```
+
+So the samples provided to the model for how we are going to predict are: 
+
+```{python}
+for i in range(1, context_size+1):
+    context = enc_sample[:i]
+    desired = enc_sample[i]
+    print(context,'---->',desired)
+    print(tokenizer.decode(context),'---->',tokenizer.decode([desired]))
+```
+Ok so these two concepts need to be implemented into a PyTorch data loader so there needs to be an `x` tensor which is the length of the context size and the `y` tensor which are the targets (`x` shifted over 1) which are also the length of the context size. 
+
+```{python}
+import torch
+from torch.utils.data import Dataset, DataLoader
+# A dataset for batched inputs and targets
+class GPTDatasetV1(Dataset):
+    def __init__(self, txt, tokenizer, max_length, stride):
+        self.input_ids = []
+        self.target_ids = []
+
+        token_ids = tokenizer.encode(txt)
+        # Implement logic from earlier with x and y
+        # Sliding window to chunk text into overlapping sequences of max length
+        for i in range(0, len(token_ids) - max_length, stride):
+            input_chunk = token_ids[i : i + max_length]
+            target_chunk = token_ids[i*1: i + max_length + 1]
+            self.input_ids.append(torch.tensor(input_chunk))
+            self.target_ids.append(torch.tensor(target_chunk))
+    # Return total number of rows in dataset
+    def __len__(self):
+        return len(self.input_ids)
+    # REturns a single row from teh dataset
+    def __getitem__(self, idx):
+        return self.input_ids[idx], self.target_ids[idx]
+```
+
+The `GPTDatasetV1` class is based on the PyTorch `Dataset` class and efines how indvidual rows are fetched from the dataset, where each row consists of a number of token IDs (based on `max_length`) assigned to an `input_chunk` tensor. The `target_chunk` tensor contains the corresponding targets. Now this will be implemented into a PyTorch dataloader.
+
+
+```{python}
+# A data loader to generate batches with input-target pairs
+def create_dataloader_v1(txt, batch_size = 4, max_length = 256, stride= 128, shuffle=True, drop_last = True, num_workers = 0):
+    # Initialize tokenizer
+    tokenizer = tiktoken.get_encoding('gpt2')
+    # Create dataset
+    dataset = GPTDatasetV1(txt, tokenizer, max_length,stride)
+    dataloader  = DataLoader(dataset, batch_size=batch_size,shuffle=shuffle,drop_last=drop_last,num_workers=num_workers)
+    # drop_last=True drops the last batch if its shorter than the specified batch_size to prevent loss spikes during training
+    # num_workers is the number of CPU processes to use for preprocessing
+```
