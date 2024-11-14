@@ -352,7 +352,7 @@ class GPTDatasetV1(Dataset):
         # Sliding window to chunk text into overlapping sequences of max length
         for i in range(0, len(token_ids) - max_length, stride):
             input_chunk = token_ids[i : i + max_length]
-            target_chunk = token_ids[i*1: i + max_length + 1]
+            target_chunk = token_ids[i + 1: i + max_length + 1]
             self.input_ids.append(torch.tensor(input_chunk))
             self.target_ids.append(torch.tensor(target_chunk))
     # Return total number of rows in dataset
@@ -376,4 +376,124 @@ def create_dataloader_v1(txt, batch_size = 4, max_length = 256, stride= 128, shu
     dataloader  = DataLoader(dataset, batch_size=batch_size,shuffle=shuffle,drop_last=drop_last,num_workers=num_workers)
     # drop_last=True drops the last batch if its shorter than the specified batch_size to prevent loss spikes during training
     # num_workers is the number of CPU processes to use for preprocessing
+    return dataloader
 ```
+
+Testing the `dataloader` with a batch size of 1 for an LLM with a context size of 4 to develop an intuition of how the `GPTDatasetV1` class from listing 2.5 and the `create_dataloader_v1` function work together.
+
+```{python}
+with open('the_verdict.txt','r',encoding='utf-8') as f:
+    raw_text = f.read()
+
+dataloader = create_dataloader_v1(
+    raw_text, batch_size=1, max_length=4, stride=1, shuffle=False)
+data_iter = iter(dataloader)
+first_batch = next(data_iter)
+print(first_batch)
+```
+`first_batch` variable is two tensors: the first stores the input token IDs and the second contains the target token IDs. Since the `max_length` is set of 4, each of the two tensors is length 4. Typically an LLM is trained on inputs of size 256 and up. 
+
+The `stride` is how much each batch is shifted from each other.
+
+```{python}
+second_batch = next(data_iter)
+print(second_batch)
+```
+
+A few examples to play with the dataloader function.
+
+```{python}
+dataloader = create_dataloader_v1(
+    raw_text, batch_size=1, max_length=3, stride=2, shuffle=False)
+data_iter = iter(dataloader)
+first_batch = next(data_iter)
+print(first_batch)
+second_batch = next(data_iter)
+print(second_batch)
+```
+
+::: {.callout-note collapse="true"}
+## Exercise 2.2 Data loaders with different stides and context sizes
+
+To develop more intution for how the data loader works, try to run it with differnt settings such as `max_length=2` and `stride=2`, and `max_length=8` and `stride=2`.
+
+```{python}
+dataloader = create_dataloader_v1(
+    raw_text, batch_size=1, max_length=2, stride=2, shuffle=False)
+data_iter = iter(dataloader)
+print(next(data_iter))
+print(next(data_iter))
+
+dataloader = create_dataloader_v1(
+    raw_text, batch_size=1, max_length=8, stride=2, shuffle=False)
+data_iter = iter(dataloader)
+print(next(data_iter))
+print(next(data_iter))
+```
+
+:::
+
+Batch sizes of 1, such as observed so far, are useful for illustration. In dep learning, small batch sizes require less memory during training but lead to more noisy model updates. 
+
+An example of using a larger batch size in the current data loader. 
+
+```{python}
+# Setting stride to 4 so each input is not overlapping (overfitting) but also not skipping any words (using whole dataset)
+dataloader = create_dataloader_v1(
+    raw_text, batch_size=8, max_length=4, stride=4, shuffle=False)
+data_iter = iter(dataloader)
+inputs, targets = next(data_iter)
+print(f'Inputs with shape {inputs.shape}\n', inputs)
+print(f'\nTargets with shape {targets.shape}\n',targets)
+```
+
+## 2.7 Creating token embeddings
+The last step to prepare the input text for LLM training is to convert the token IDs into embedding vectors. Initially the weights for the embeddings are random, but then are trained in the learning process. 
+
+A continuous vector representation, or embedding, is necessary since GPT-like LLMs are deep neural networks trained with the backpropagation algorithm. 
+
+Assume you begin with the following input token with IDs 2,3,5, and 1.
+
+```{python}
+input_ids = torch.tensor([2,3,5,1])
+```
+Then the vocabularly is small with only 6 words (BPE has 50,257) and create embeddings of size 3 (in GPT-3 the embedding size is 12,288 dimensions)
+
+```{python}
+vocab_size = 6
+output_dim = 3
+# Set seed for reproducibility
+torch.manual_seed(123)
+embedding_layer = torch.nn.Embedding(num_embeddings=vocab_size,embedding_dim=output_dim) # num_embeddings is number of words in vocab, embedding_dim is number of embedding dimensions]
+print(f'Dimensions of embeddings {embedding_layer.weight.shape}\n',embedding_layer.weight)
+```
+
+The weight matrix is full of small, random values. Which is become optimized during LLM training. Each row is for each of the six possible tokens in the vocabularly, and there is one column for each of the three embedding dimensions. 
+
+Now apply it to a token ID to obtain an embedding vector. 
+
+```{python}
+print(embedding_layer(torch.tensor([3])))
+```
+
+When compared to previous embedding matrix with all 6 words in the vocabularly, we can see this row corresponds to the 4th row (index 3). So essentially the embedding layer is a lookup operation that retrieves rows from the embedding layer's weight matrix via a token ID. You give it a token ID, it looks up what row to return to give a continuous value to represent it and feed into the LLM.
+
+
+```{python}
+print(f'Dimensions of embeddings {embedding_layer.weight.shape}\n',embedding_layer.weight)
+print(embedding_layer(torch.tensor([3])))
+```
+
+::: callout-note
+When looking at embeddings compared to one-hot encoding, the embedding layer approach is essentially a more efficient way of implementing one-hot encoding followed by matrix multiplication in a fully connected layer. See [this link](https://github.com/rasbt/LLMs-from-scratch/blob/main/ch02/03_bonus_embedding-vs-matmul/embeddings-and-linear-layers.ipynb) for the comparison. 
+:::
+
+Extending this notion to all four input IDs
+
+```{python}
+print(embedding_layer(input_ids))
+```
+
+Now there's a continuous value representation of each token ID, there needs to be positional information implemented as well. 
+
+## 2.8 Encoding word positions
