@@ -68,6 +68,35 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <link href="Chapter 2_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
 <link href="Chapter 2_files/libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
 
+  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN") {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
 
 </head>
 
@@ -105,7 +134,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="tokenizing-text" class="level2">
 <h2 class="anchored" data-anchor-id="tokenizing-text">2.2 Tokenizing text</h2>
 <p>Before creating embeddings however, text data requires a preprocessing step to create tokens which is how we split input text up into pieces for an embedding layer. To summarize, we split an input text into individual tokens, which are either words or special characters, such as punctuation characters. These are later converted into token IDs (like a lookup table) which are then used to create embeddings.</p>
-<div id="6935305c" class="cell" data-execution_count="1">
+<div id="50bb2bc0" class="cell" data-execution_count="1">
 <div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="cf">with</span> <span class="bu">open</span>(<span class="st">'the_verdict.txt'</span>, <span class="st">'r'</span>,encoding<span class="op">=</span><span class="st">'utf_8'</span>) <span class="im">as</span> f:</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>    raw_text <span class="op">=</span> f.read()</span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a></span>
@@ -119,7 +148,7 @@ I HAD always thought Jack Gisburn rather a cheap genius--though a good fellow en
 <p>Goal is to tokenize this 20479 character short story.</p>
 <p>Then turn into embeddings for LLM training.</p>
 <p>So use regex to get a list of individual words, whitespaces, and punctuation characters</p>
-<div id="beb40e1b" class="cell" data-execution_count="2">
+<div id="2a3ca545" class="cell" data-execution_count="2">
 <div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> re</span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>text <span class="op">=</span> <span class="st">'Hello, world. This, is a test.'</span></span>
@@ -130,7 +159,7 @@ I HAD always thought Jack Gisburn rather a cheap genius--though a good fellow en
 </div>
 </div>
 <p>Now split on whitespaces and commas (), and periods ([,.])</p>
-<div id="6efcaf61" class="cell" data-execution_count="3">
+<div id="5d7af888" class="cell" data-execution_count="3">
 <div class="sourceCode cell-code" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>result <span class="op">=</span> re.split(<span class="vs">r'([,.]|\s)'</span>,text)</span>
 <span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(result)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
@@ -138,7 +167,7 @@ I HAD always thought Jack Gisburn rather a cheap genius--though a good fellow en
 </div>
 </div>
 <p>We could remove whitespaces so we just have words, commas, and periods</p>
-<div id="64fe314e" class="cell" data-execution_count="4">
+<div id="ea690603" class="cell" data-execution_count="4">
 <div class="sourceCode cell-code" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>result <span class="op">=</span> [item <span class="cf">for</span> item <span class="kw">in</span> result <span class="cf">if</span> item.strip()]</span>
 <span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(result)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
@@ -159,7 +188,7 @@ Note
 </div>
 </div>
 <p>So now modify the tokenization scheme to work on other types of punction, such as question marks, quotation marks, and the double dashes shown in the first 100 characters.</p>
-<div id="36885cd9" class="cell" data-execution_count="5">
+<div id="de9315a4" class="cell" data-execution_count="5">
 <div class="sourceCode cell-code" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>text <span class="op">=</span> <span class="st">'Hello, world. Is this-- a test?'</span></span>
 <span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>result <span class="op">=</span> re.split(<span class="vs">r'([,.:;?_!"()\']|--|\s)'</span>,text)</span>
 <span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>result <span class="op">=</span> [item.strip() <span class="cf">for</span> item <span class="kw">in</span> result <span class="cf">if</span> item.strip()]</span>
@@ -169,7 +198,7 @@ Note
 </div>
 </div>
 <p>Now apply to the entire short story</p>
-<div id="3cd7e930" class="cell" data-execution_count="6">
+<div id="b39d56ee" class="cell" data-execution_count="6">
 <div class="sourceCode cell-code" id="cb11"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>preprocessed <span class="op">=</span> re.split(<span class="vs">r'([,.:;?_!"()\']|--|\s)'</span>,raw_text)</span>
 <span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>preprocessed <span class="op">=</span> [item.strip() <span class="cf">for</span> item <span class="kw">in</span> preprocessed <span class="cf">if</span> item.strip()]</span>
 <span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="bu">len</span>(preprocessed))</span>
@@ -183,7 +212,7 @@ Note
 <section id="converting-tokens-into-token-ids" class="level2">
 <h2 class="anchored" data-anchor-id="converting-tokens-into-token-ids">2.3 Converting tokens into token IDs</h2>
 <p>We now take these tokens which are a Python string and convert them to an integer representation to produce token IDs. An intermediate step before going to embedding vectors. This mapping from tokens to token IDs requires a ``vocabulary’’.</p>
-<div id="5b5f6324" class="cell" data-execution_count="7">
+<div id="5ff8d6df" class="cell" data-execution_count="7">
 <div class="sourceCode cell-code" id="cb13"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>all_words <span class="op">=</span> <span class="bu">sorted</span>(<span class="bu">set</span>(preprocessed)) <span class="co"># Get all unique words</span></span>
 <span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>vocab_size <span class="op">=</span> <span class="bu">len</span>(all_words)</span>
 <span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(vocab_size)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
@@ -192,7 +221,7 @@ Note
 </div>
 </div>
 <p>Let’s show some of this lookup, it’ll be a perfect use of a dictionary data type.</p>
-<div id="91d041fc" class="cell" data-execution_count="8">
+<div id="34ebb21f" class="cell" data-execution_count="8">
 <div class="sourceCode cell-code" id="cb15"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>vocab <span class="op">=</span> {token:integer <span class="cf">for</span> integer, token <span class="kw">in</span> <span class="bu">enumerate</span>(all_words)}</span>
 <span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> i, item <span class="kw">in</span> <span class="bu">enumerate</span>(vocab.items()):</span>
 <span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(item)</span>
@@ -267,7 +296,7 @@ Tip
 </div>
 </div>
 <p>Let’s create a complete tokenizer class which can go both directions, <code>encode</code> method (string-to-integer) and <code>decode</code> (integer-to-string) method.</p>
-<div id="870f0c60" class="cell" data-execution_count="9">
+<div id="7232cfce" class="cell" data-execution_count="9">
 <div class="sourceCode cell-code" id="cb17"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> SimpleTokenizerV1:</span>
 <span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="fu">__init__</span>(<span class="va">self</span>, vocab):</span>
 <span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Store the vocab as a class attribute for access in the encode and decode methods</span></span>
@@ -311,7 +340,7 @@ Tip
 </ul>
 <section id="example" class="level3">
 <h3 class="anchored" data-anchor-id="example">Example</h3>
-<div id="b9d85322" class="cell" data-execution_count="10">
+<div id="a906ccde" class="cell" data-execution_count="10">
 <div class="sourceCode cell-code" id="cb18"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>vocab <span class="op">=</span> {<span class="st">'hello'</span>: <span class="dv">1</span>, <span class="st">'world'</span>: <span class="dv">2</span>, <span class="st">','</span>: <span class="dv">3</span>}</span>
 <span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>tokenizer <span class="op">=</span> SimpleTokenizerV1(vocab)</span>
 <span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a></span>
@@ -326,7 +355,7 @@ hello, world</code></pre>
 </div>
 </div>
 <p>Back to the short story vocab</p>
-<div id="18af0c65" class="cell" data-execution_count="11">
+<div id="89b1291c" class="cell" data-execution_count="11">
 <div class="sourceCode cell-code" id="cb20"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>vocab <span class="op">=</span> {token:integer <span class="cf">for</span> integer, token <span class="kw">in</span> <span class="bu">enumerate</span>(all_words)}</span>
 <span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>tokenizer <span class="op">=</span> SimpleTokenizerV1(vocab)</span>
 <span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a></span>
@@ -339,39 +368,36 @@ hello, world</code></pre>
 </div>
 </div>
 <p>The code above prints the following token IDs followed by the code below for the decoding</p>
-<div id="9a737120" class="cell" data-execution_count="12">
+<div id="61c84950" class="cell" data-execution_count="12">
 <div class="sourceCode cell-code" id="cb22"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(tokenizer.decode(ids))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>" It' s the last he painted, you know," Mrs. Gisburn said with pardonable pride.</code></pre>
 </div>
 </div>
 <p>We can apply it to other text as well but be careful if any words are not in our vocab. This will cause an error!</p>
-<div id="96689124" class="cell" data-execution_count="13">
-<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a>text <span class="op">=</span> <span class="st">'Hello, do you like tea?'</span></span>
-<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(tokenizer.encode(text))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-error">
-<pre><code>KeyError: 'Hello'</code></pre>
-</div>
+<div id="f4024510" class="cell" data-execution_count="13">
+<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="co"># text = 'Hello, do you like tea?'</span></span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a><span class="co"># print(tokenizer.encode(text))</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
 </section>
 <section id="adding-special-context-tokens" class="level2">
 <h2 class="anchored" data-anchor-id="adding-special-context-tokens">2.4 Adding special context tokens</h2>
 <p>This is how you will handle unknown words, but also to identify the end of the text.</p>
-<div id="34a5ee05" class="cell" data-execution_count="14">
-<div class="sourceCode cell-code" id="cb26"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a>all_tokens <span class="op">=</span> <span class="bu">sorted</span>(<span class="bu">list</span>(<span class="bu">set</span>(preprocessed)))</span>
-<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a>all_tokens.extend([<span class="st">'&lt;|endoftext|&gt;'</span>,<span class="st">'&lt;|unk|&gt;'</span>]) <span class="co"># Add to vocab</span></span>
-<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a>vocab <span class="op">=</span> {token:integer <span class="cf">for</span> integer, token <span class="kw">in</span> <span class="bu">enumerate</span>(all_tokens)}</span>
-<span id="cb26-4"><a href="#cb26-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb26-5"><a href="#cb26-5" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="bu">len</span>(vocab.items()))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div id="b12745eb" class="cell" data-execution_count="14">
+<div class="sourceCode cell-code" id="cb25"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a>all_tokens <span class="op">=</span> <span class="bu">sorted</span>(<span class="bu">list</span>(<span class="bu">set</span>(preprocessed)))</span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a>all_tokens.extend([<span class="st">'&lt;|endoftext|&gt;'</span>,<span class="st">'&lt;|unk|&gt;'</span>]) <span class="co"># Add to vocab</span></span>
+<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a>vocab <span class="op">=</span> {token:integer <span class="cf">for</span> integer, token <span class="kw">in</span> <span class="bu">enumerate</span>(all_tokens)}</span>
+<span id="cb25-4"><a href="#cb25-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-5"><a href="#cb25-5" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="bu">len</span>(vocab.items()))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>1229</code></pre>
 </div>
 </div>
 <p>The new vocab has increased by two!</p>
-<div id="5c7d2f00" class="cell" data-execution_count="15">
-<div class="sourceCode cell-code" id="cb28"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> i, item <span class="kw">in</span> <span class="bu">enumerate</span>(<span class="bu">list</span>(vocab.items())[<span class="op">-</span><span class="dv">5</span>:]):</span>
-<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(item)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div id="dac80bd3" class="cell" data-execution_count="15">
+<div class="sourceCode cell-code" id="cb27"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> i, item <span class="kw">in</span> <span class="bu">enumerate</span>(<span class="bu">list</span>(vocab.items())[<span class="op">-</span><span class="dv">5</span>:]):</span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(item)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>('younger', 1224)
 ('your', 1225)
@@ -381,50 +407,50 @@ hello, world</code></pre>
 </div>
 </div>
 <p>Adjusting the tokenizer class from before</p>
-<div id="7c26e8f2" class="cell" data-execution_count="16">
-<div class="sourceCode cell-code" id="cb30"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> SimpleTokenizerV2:</span>
-<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="fu">__init__</span>(<span class="va">self</span>, vocab):</span>
-<span id="cb30-3"><a href="#cb30-3" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.str_to_int <span class="op">=</span> vocab</span>
-<span id="cb30-4"><a href="#cb30-4" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.int_to_str <span class="op">=</span> {i:s <span class="cf">for</span> s, i <span class="kw">in</span> vocab.items()}</span>
-<span id="cb30-5"><a href="#cb30-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb30-6"><a href="#cb30-6" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Process input text into token IDs</span></span>
-<span id="cb30-7"><a href="#cb30-7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> encode(<span class="va">self</span>, text):</span>
-<span id="cb30-8"><a href="#cb30-8" aria-hidden="true" tabindex="-1"></a>        preprocessed <span class="op">=</span> re.split(<span class="vs">r'([,.:;?_!"()\']|--|\s)'</span>,text) <span class="co"># Seperate words/punctution</span></span>
-<span id="cb30-9"><a href="#cb30-9" aria-hidden="true" tabindex="-1"></a>        preprocessed <span class="op">=</span> [item.strip() <span class="cf">for</span> item <span class="kw">in</span> preprocessed <span class="cf">if</span> item.strip()] <span class="co"># Remove white space</span></span>
-<span id="cb30-10"><a href="#cb30-10" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Replace unknown words with &lt;|unk|&gt; tokens</span></span>
-<span id="cb30-11"><a href="#cb30-11" aria-hidden="true" tabindex="-1"></a>        preprocessed <span class="op">=</span> [item <span class="cf">if</span> item <span class="kw">in</span> <span class="va">self</span>.str_to_int <span class="cf">else</span> <span class="st">"&lt;|unk|&gt;"</span> <span class="cf">for</span> item <span class="kw">in</span> preprocessed] </span>
-<span id="cb30-12"><a href="#cb30-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb30-13"><a href="#cb30-13" aria-hidden="true" tabindex="-1"></a>        ids <span class="op">=</span> [<span class="va">self</span>.str_to_int[s] <span class="cf">for</span> s <span class="kw">in</span> preprocessed] <span class="co"># Input string and get key from vocab dict</span></span>
-<span id="cb30-14"><a href="#cb30-14" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> ids</span>
-<span id="cb30-15"><a href="#cb30-15" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb30-16"><a href="#cb30-16" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Convert token IDs back to text</span></span>
-<span id="cb30-17"><a href="#cb30-17" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> decode(<span class="va">self</span>, ids):</span>
-<span id="cb30-18"><a href="#cb30-18" aria-hidden="true" tabindex="-1"></a>        text <span class="op">=</span> <span class="st">" "</span>.join([<span class="va">self</span>.int_to_str[i] <span class="cf">for</span> i <span class="kw">in</span> ids])</span>
-<span id="cb30-19"><a href="#cb30-19" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Replace spaces before the specified punctuation</span></span>
-<span id="cb30-20"><a href="#cb30-20" aria-hidden="true" tabindex="-1"></a>        text <span class="op">=</span> re.sub(<span class="vs">r'\s+([,.?_!"()\'])'</span>, <span class="vs">r'\1'</span>, text)</span>
-<span id="cb30-21"><a href="#cb30-21" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> text</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div id="00e3eed8" class="cell" data-execution_count="16">
+<div class="sourceCode cell-code" id="cb29"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> SimpleTokenizerV2:</span>
+<span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="fu">__init__</span>(<span class="va">self</span>, vocab):</span>
+<span id="cb29-3"><a href="#cb29-3" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.str_to_int <span class="op">=</span> vocab</span>
+<span id="cb29-4"><a href="#cb29-4" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.int_to_str <span class="op">=</span> {i:s <span class="cf">for</span> s, i <span class="kw">in</span> vocab.items()}</span>
+<span id="cb29-5"><a href="#cb29-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb29-6"><a href="#cb29-6" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Process input text into token IDs</span></span>
+<span id="cb29-7"><a href="#cb29-7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> encode(<span class="va">self</span>, text):</span>
+<span id="cb29-8"><a href="#cb29-8" aria-hidden="true" tabindex="-1"></a>        preprocessed <span class="op">=</span> re.split(<span class="vs">r'([,.:;?_!"()\']|--|\s)'</span>,text) <span class="co"># Seperate words/punctution</span></span>
+<span id="cb29-9"><a href="#cb29-9" aria-hidden="true" tabindex="-1"></a>        preprocessed <span class="op">=</span> [item.strip() <span class="cf">for</span> item <span class="kw">in</span> preprocessed <span class="cf">if</span> item.strip()] <span class="co"># Remove white space</span></span>
+<span id="cb29-10"><a href="#cb29-10" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Replace unknown words with &lt;|unk|&gt; tokens</span></span>
+<span id="cb29-11"><a href="#cb29-11" aria-hidden="true" tabindex="-1"></a>        preprocessed <span class="op">=</span> [item <span class="cf">if</span> item <span class="kw">in</span> <span class="va">self</span>.str_to_int <span class="cf">else</span> <span class="st">"&lt;|unk|&gt;"</span> <span class="cf">for</span> item <span class="kw">in</span> preprocessed] </span>
+<span id="cb29-12"><a href="#cb29-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb29-13"><a href="#cb29-13" aria-hidden="true" tabindex="-1"></a>        ids <span class="op">=</span> [<span class="va">self</span>.str_to_int[s] <span class="cf">for</span> s <span class="kw">in</span> preprocessed] <span class="co"># Input string and get key from vocab dict</span></span>
+<span id="cb29-14"><a href="#cb29-14" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> ids</span>
+<span id="cb29-15"><a href="#cb29-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb29-16"><a href="#cb29-16" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Convert token IDs back to text</span></span>
+<span id="cb29-17"><a href="#cb29-17" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> decode(<span class="va">self</span>, ids):</span>
+<span id="cb29-18"><a href="#cb29-18" aria-hidden="true" tabindex="-1"></a>        text <span class="op">=</span> <span class="st">" "</span>.join([<span class="va">self</span>.int_to_str[i] <span class="cf">for</span> i <span class="kw">in</span> ids])</span>
+<span id="cb29-19"><a href="#cb29-19" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Replace spaces before the specified punctuation</span></span>
+<span id="cb29-20"><a href="#cb29-20" aria-hidden="true" tabindex="-1"></a>        text <span class="op">=</span> re.sub(<span class="vs">r'\s+([,.?_!"()\'])'</span>, <span class="vs">r'\1'</span>, text)</span>
+<span id="cb29-21"><a href="#cb29-21" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> text</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>Now let’s try the new tokenzier out on two independent and unrelated sentances that are concacted togther.</p>
-<div id="15dd242f" class="cell" data-execution_count="17">
-<div class="sourceCode cell-code" id="cb31"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a>text1 <span class="op">=</span> <span class="st">'Hello, do you like tea?'</span></span>
-<span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a>text2 <span class="op">=</span> <span class="st">'In the sunlit terraces of the palace.'</span></span>
-<span id="cb31-3"><a href="#cb31-3" aria-hidden="true" tabindex="-1"></a>text <span class="op">=</span> <span class="st">' &lt;|endoftext|&gt; '</span>.join([text1,text2])</span>
-<span id="cb31-4"><a href="#cb31-4" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(text)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div id="756f44e9" class="cell" data-execution_count="17">
+<div class="sourceCode cell-code" id="cb30"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a>text1 <span class="op">=</span> <span class="st">'Hello, do you like tea?'</span></span>
+<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a>text2 <span class="op">=</span> <span class="st">'In the sunlit terraces of the palace.'</span></span>
+<span id="cb30-3"><a href="#cb30-3" aria-hidden="true" tabindex="-1"></a>text <span class="op">=</span> <span class="st">' &lt;|endoftext|&gt; '</span>.join([text1,text2])</span>
+<span id="cb30-4"><a href="#cb30-4" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(text)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Hello, do you like tea? &lt;|endoftext|&gt; In the sunlit terraces of the palace.</code></pre>
 </div>
 </div>
 <p>Let’s tokenize!</p>
-<div id="3fa48fbb" class="cell" data-execution_count="18">
-<div class="sourceCode cell-code" id="cb33"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a>tokenizer <span class="op">=</span> SimpleTokenizerV2(vocab)</span>
-<span id="cb33-2"><a href="#cb33-2" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(tokenizer.encode(text))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div id="7a967b42" class="cell" data-execution_count="18">
+<div class="sourceCode cell-code" id="cb32"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a>tokenizer <span class="op">=</span> SimpleTokenizerV2(vocab)</span>
+<span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(tokenizer.encode(text))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>[1228, 6, 415, 1223, 700, 1064, 15, 1227, 77, 1079, 1045, 1075, 800, 1079, 1228, 8]</code></pre>
 </div>
 </div>
 <p>And detokenize to check!</p>
-<div id="9f6207c9" class="cell" data-execution_count="19">
-<div class="sourceCode cell-code" id="cb35"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(tokenizer.decode(tokenizer.encode(text)))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div id="c558da7a" class="cell" data-execution_count="19">
+<div class="sourceCode cell-code" id="cb34"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(tokenizer.decode(tokenizer.encode(text)))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>&lt;|unk|&gt;, do you like tea? &lt;|endoftext|&gt; In the sunlit terraces of the &lt;|unk|&gt;.</code></pre>
 </div>
@@ -441,32 +467,32 @@ hello, world</code></pre>
 <section id="byte-pair-encoding-bpe" class="level2">
 <h2 class="anchored" data-anchor-id="byte-pair-encoding-bpe">2.5 Byte pair encoding (BPE)</h2>
 <p>BPE tokenizer was used in GPT-2 and GPT-3. Since it’s a bit complicated, we will use an open source library called <a href="https://github.com/openai/tiktoken">tiktoken</a> which implements the BPE algorithm efficienctly in Rust.</p>
-<div id="74585707" class="cell" data-execution_count="20">
-<div class="sourceCode cell-code" id="cb37"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> importlib.metadata <span class="im">import</span> version</span>
-<span id="cb37-2"><a href="#cb37-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> tiktoken</span>
-<span id="cb37-3"><a href="#cb37-3" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">'tiktoken version:'</span>, version(<span class="st">'tiktoken'</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div id="525e4899" class="cell" data-execution_count="20">
+<div class="sourceCode cell-code" id="cb36"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> importlib.metadata <span class="im">import</span> version</span>
+<span id="cb36-2"><a href="#cb36-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> tiktoken</span>
+<span id="cb36-3"><a href="#cb36-3" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">'tiktoken version:'</span>, version(<span class="st">'tiktoken'</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>tiktoken version: 0.7.0</code></pre>
 </div>
 </div>
 <p>Once installed, we can instatiate the BPE tokenizer from tiktoken as follows:</p>
-<div id="af48a800" class="cell" data-execution_count="21">
-<div class="sourceCode cell-code" id="cb39"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a>tokenizer <span class="op">=</span> tiktoken.get_encoding(<span class="st">'gpt2'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div id="2cf3d476" class="cell" data-execution_count="21">
+<div class="sourceCode cell-code" id="cb38"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a>tokenizer <span class="op">=</span> tiktoken.get_encoding(<span class="st">'gpt2'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>The usage of this tokenizer is very similar to the <code>SimpleTokenizerV2</code> we implemented previously with an <code>encode</code> method:</p>
-<div id="5d2b1044" class="cell" data-execution_count="22">
-<div class="sourceCode cell-code" id="cb40"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a>text <span class="op">=</span> (</span>
-<span id="cb40-2"><a href="#cb40-2" aria-hidden="true" tabindex="-1"></a>    <span class="st">"Hello, do you like tea? &lt;|endoftext|&gt; In the sunlit terraces of someunknownPlace."</span>)</span>
-<span id="cb40-3"><a href="#cb40-3" aria-hidden="true" tabindex="-1"></a>integers <span class="op">=</span> tokenizer.encode(text,allowed_special <span class="op">=</span> {<span class="st">'&lt;|endoftext|&gt;'</span>})</span>
-<span id="cb40-4"><a href="#cb40-4" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(integers)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div id="3146fb64" class="cell" data-execution_count="22">
+<div class="sourceCode cell-code" id="cb39"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a>text <span class="op">=</span> (</span>
+<span id="cb39-2"><a href="#cb39-2" aria-hidden="true" tabindex="-1"></a>    <span class="st">"Hello, do you like tea? &lt;|endoftext|&gt; In the sunlit terraces of someunknownPlace."</span>)</span>
+<span id="cb39-3"><a href="#cb39-3" aria-hidden="true" tabindex="-1"></a>integers <span class="op">=</span> tokenizer.encode(text,allowed_special <span class="op">=</span> {<span class="st">'&lt;|endoftext|&gt;'</span>})</span>
+<span id="cb39-4"><a href="#cb39-4" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(integers)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>[15496, 11, 466, 345, 588, 8887, 30, 220, 50256, 554, 262, 4252, 18250, 8812, 2114, 286, 617, 34680, 27271, 13]</code></pre>
 </div>
 </div>
 <p>Which we can convert back to text with a <code>decode</code> method:</p>
-<div id="8fc6b1b8" class="cell" data-execution_count="23">
-<div class="sourceCode cell-code" id="cb42"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb42-1"><a href="#cb42-1" aria-hidden="true" tabindex="-1"></a>strings <span class="op">=</span> tokenizer.decode(integers)</span>
-<span id="cb42-2"><a href="#cb42-2" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(strings)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div id="4b1a61e4" class="cell" data-execution_count="23">
+<div class="sourceCode cell-code" id="cb41"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a>strings <span class="op">=</span> tokenizer.decode(integers)</span>
+<span id="cb41-2"><a href="#cb41-2" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(strings)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Hello, do you like tea? &lt;|endoftext|&gt; In the sunlit terraces of someunknownPlace.</code></pre>
 </div>
@@ -486,16 +512,21 @@ Exercise 2.1 Byte pair encoding of unkown words
 <div id="callout-3" class="callout-3-contents callout-collapse collapse">
 <div class="callout-body-container callout-body">
 <p>Try the BPE tokenizer from the tiktoken library on the unknown words “Akwirw ier” and print the individual token IDs. Then, call the decode function on each of the resulting integers in this list. Lastly, call the decode method on the token IDs to check whether it can reconstruct the original input, “Akwirw ier”</p>
-<div id="a15e59ef" class="cell" data-execution_count="24">
-<div class="sourceCode cell-code" id="cb44"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb44-1"><a href="#cb44-1" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(tokenizer.encode(<span class="st">'Akwirw ier'</span>))</span>
-<span id="cb44-2"><a href="#cb44-2" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> individual_token <span class="kw">in</span> tokenizer.encode(<span class="st">'Akwirw ier'</span>):</span>
-<span id="cb44-3"><a href="#cb44-3" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(tokenizer.decode(individual_token))</span>
-<span id="cb44-4"><a href="#cb44-4" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(tokenizer.decode(tokenizer.encode(<span class="st">'Akwirw ier'</span>)))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div id="5f951667" class="cell" data-execution_count="24">
+<div class="sourceCode cell-code" id="cb43"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb43-1"><a href="#cb43-1" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(tokenizer.encode(<span class="st">'Akwirw ier'</span>))</span>
+<span id="cb43-2"><a href="#cb43-2" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> individual_token <span class="kw">in</span> tokenizer.encode(<span class="st">'Akwirw ier'</span>):</span>
+<span id="cb43-3"><a href="#cb43-3" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(tokenizer.decode_single_token_bytes(individual_token))</span>
+<span id="cb43-4"><a href="#cb43-4" aria-hidden="true" tabindex="-1"></a>    <span class="co"># b in front of strings indicates that the strings are byte strings.</span></span>
+<span id="cb43-5"><a href="#cb43-5" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(tokenizer.decode(tokenizer.encode(<span class="st">'Akwirw ier'</span>)))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>[33901, 86, 343, 86, 220, 959]</code></pre>
-</div>
-<div class="cell-output cell-output-error">
-<pre><code>TypeError: argument 'tokens': 'int' object cannot be converted to 'Sequence'</code></pre>
+<pre><code>[33901, 86, 343, 86, 220, 959]
+b'Ak'
+b'w'
+b'ir'
+b'w'
+b' '
+b'ier'
+Akwirw ier</code></pre>
 </div>
 </div>
 </div>
@@ -504,6 +535,346 @@ Exercise 2.1 Byte pair encoding of unkown words
 </section>
 <section id="data-sampling-with-a-sliding-window" class="level2">
 <h2 class="anchored" data-anchor-id="data-sampling-with-a-sliding-window">2.6 Data sampling with a sliding window</h2>
+<p>Let’s implement a data loader that fetches the input-target pairs from the training dataset using a sliding window approach. Basically since the next word is always being predicted the window includes all the text “it has seen”, then receieves the next word for the prediction, then at the next iteration that predicted word is revealed and added to the input window.</p>
+<div id="c932016a" class="cell" data-execution_count="25">
+<div class="sourceCode cell-code" id="cb45"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb45-1"><a href="#cb45-1" aria-hidden="true" tabindex="-1"></a><span class="cf">with</span> <span class="bu">open</span>(<span class="st">'the_verdict.txt'</span>,<span class="st">'r'</span>,encoding<span class="op">=</span><span class="st">'utf-8'</span>) <span class="im">as</span> f:</span>
+<span id="cb45-2"><a href="#cb45-2" aria-hidden="true" tabindex="-1"></a>    raw_text <span class="op">=</span> f.read()</span>
+<span id="cb45-3"><a href="#cb45-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb45-4"><a href="#cb45-4" aria-hidden="true" tabindex="-1"></a>enc_text <span class="op">=</span> tokenizer.encode(raw_text)</span>
+<span id="cb45-5"><a href="#cb45-5" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="bu">len</span>(enc_text))</span>
+<span id="cb45-6"><a href="#cb45-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Remove the first 50 tokens from the dataset for demostration purposes. </span></span>
+<span id="cb45-7"><a href="#cb45-7" aria-hidden="true" tabindex="-1"></a>enc_sample <span class="op">=</span> enc_text[<span class="dv">50</span>:]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>5521</code></pre>
+</div>
+</div>
+<p>Easiest way to create the input-target pairs for the next-word prediction task is to create two variables. It mirrors traditional supervised learning of having a variable <code>x</code> and a response <code>y</code>.</p>
+<div id="8d951598" class="cell" data-execution_count="26">
+<div class="sourceCode cell-code" id="cb47"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb47-1"><a href="#cb47-1" aria-hidden="true" tabindex="-1"></a>context_size <span class="op">=</span> <span class="dv">4</span> <span class="co"># The context size determines how many tokens are in the input</span></span>
+<span id="cb47-2"><a href="#cb47-2" aria-hidden="true" tabindex="-1"></a>x <span class="op">=</span> enc_sample[:context_size]</span>
+<span id="cb47-3"><a href="#cb47-3" aria-hidden="true" tabindex="-1"></a>y <span class="op">=</span> enc_sample[<span class="dv">1</span>:context_size<span class="op">+</span><span class="dv">1</span>]</span>
+<span id="cb47-4"><a href="#cb47-4" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f'x: </span><span class="sc">{</span>x<span class="sc">}</span><span class="ss">'</span>)</span>
+<span id="cb47-5"><a href="#cb47-5" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f'y:      </span><span class="sc">{</span>y<span class="sc">}</span><span class="ss">'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>x: [290, 4920, 2241, 287]
+y:      [4920, 2241, 287, 257]</code></pre>
+</div>
+</div>
+<p>So the samples provided to the model for how we are going to predict are:</p>
+<div id="bc842b53" class="cell" data-execution_count="27">
+<div class="sourceCode cell-code" id="cb49"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb49-1"><a href="#cb49-1" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">1</span>, context_size<span class="op">+</span><span class="dv">1</span>):</span>
+<span id="cb49-2"><a href="#cb49-2" aria-hidden="true" tabindex="-1"></a>    context <span class="op">=</span> enc_sample[:i]</span>
+<span id="cb49-3"><a href="#cb49-3" aria-hidden="true" tabindex="-1"></a>    desired <span class="op">=</span> enc_sample[i]</span>
+<span id="cb49-4"><a href="#cb49-4" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(context,<span class="st">'----&gt;'</span>,desired)</span>
+<span id="cb49-5"><a href="#cb49-5" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(tokenizer.decode(context),<span class="st">'----&gt;'</span>,tokenizer.decode([desired]))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[290] ----&gt; 4920
+ and ----&gt;  established
+[290, 4920] ----&gt; 2241
+ and established ----&gt;  himself
+[290, 4920, 2241] ----&gt; 287
+ and established himself ----&gt;  in
+[290, 4920, 2241, 287] ----&gt; 257
+ and established himself in ----&gt;  a</code></pre>
+</div>
+</div>
+<p>Ok so these two concepts need to be implemented into a PyTorch data loader so there needs to be an <code>x</code> tensor which is the length of the context size and the <code>y</code> tensor which are the targets (<code>x</code> shifted over 1) which are also the length of the context size.</p>
+<div id="2dddcea9" class="cell" data-execution_count="28">
+<div class="sourceCode cell-code" id="cb51"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb51-1"><a href="#cb51-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> torch</span>
+<span id="cb51-2"><a href="#cb51-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> torch.utils.data <span class="im">import</span> Dataset, DataLoader</span>
+<span id="cb51-3"><a href="#cb51-3" aria-hidden="true" tabindex="-1"></a><span class="co"># A dataset for batched inputs and targets</span></span>
+<span id="cb51-4"><a href="#cb51-4" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> GPTDatasetV1(Dataset):</span>
+<span id="cb51-5"><a href="#cb51-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="fu">__init__</span>(<span class="va">self</span>, txt, tokenizer, max_length, stride):</span>
+<span id="cb51-6"><a href="#cb51-6" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.input_ids <span class="op">=</span> []</span>
+<span id="cb51-7"><a href="#cb51-7" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.target_ids <span class="op">=</span> []</span>
+<span id="cb51-8"><a href="#cb51-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb51-9"><a href="#cb51-9" aria-hidden="true" tabindex="-1"></a>        token_ids <span class="op">=</span> tokenizer.encode(txt)</span>
+<span id="cb51-10"><a href="#cb51-10" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Implement logic from earlier with x and y</span></span>
+<span id="cb51-11"><a href="#cb51-11" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Sliding window to chunk text into overlapping sequences of max length</span></span>
+<span id="cb51-12"><a href="#cb51-12" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">0</span>, <span class="bu">len</span>(token_ids) <span class="op">-</span> max_length, stride):</span>
+<span id="cb51-13"><a href="#cb51-13" aria-hidden="true" tabindex="-1"></a>            input_chunk <span class="op">=</span> token_ids[i : i <span class="op">+</span> max_length]</span>
+<span id="cb51-14"><a href="#cb51-14" aria-hidden="true" tabindex="-1"></a>            target_chunk <span class="op">=</span> token_ids[i <span class="op">+</span> <span class="dv">1</span>: i <span class="op">+</span> max_length <span class="op">+</span> <span class="dv">1</span>]</span>
+<span id="cb51-15"><a href="#cb51-15" aria-hidden="true" tabindex="-1"></a>            <span class="va">self</span>.input_ids.append(torch.tensor(input_chunk))</span>
+<span id="cb51-16"><a href="#cb51-16" aria-hidden="true" tabindex="-1"></a>            <span class="va">self</span>.target_ids.append(torch.tensor(target_chunk))</span>
+<span id="cb51-17"><a href="#cb51-17" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Return total number of rows in dataset</span></span>
+<span id="cb51-18"><a href="#cb51-18" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="fu">__len__</span>(<span class="va">self</span>):</span>
+<span id="cb51-19"><a href="#cb51-19" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> <span class="bu">len</span>(<span class="va">self</span>.input_ids)</span>
+<span id="cb51-20"><a href="#cb51-20" aria-hidden="true" tabindex="-1"></a>    <span class="co"># REturns a single row from teh dataset</span></span>
+<span id="cb51-21"><a href="#cb51-21" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="fu">__getitem__</span>(<span class="va">self</span>, idx):</span>
+<span id="cb51-22"><a href="#cb51-22" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> <span class="va">self</span>.input_ids[idx], <span class="va">self</span>.target_ids[idx]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>The <code>GPTDatasetV1</code> class is based on the PyTorch <code>Dataset</code> class and efines how indvidual rows are fetched from the dataset, where each row consists of a number of token IDs (based on <code>max_length</code>) assigned to an <code>input_chunk</code> tensor. The <code>target_chunk</code> tensor contains the corresponding targets. Now this will be implemented into a PyTorch dataloader.</p>
+<div id="3c46293e" class="cell" data-execution_count="29">
+<div class="sourceCode cell-code" id="cb52"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb52-1"><a href="#cb52-1" aria-hidden="true" tabindex="-1"></a><span class="co"># A data loader to generate batches with input-target pairs</span></span>
+<span id="cb52-2"><a href="#cb52-2" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> create_dataloader_v1(txt, batch_size <span class="op">=</span> <span class="dv">4</span>, max_length <span class="op">=</span> <span class="dv">256</span>, stride<span class="op">=</span> <span class="dv">128</span>, shuffle<span class="op">=</span><span class="va">True</span>, drop_last <span class="op">=</span> <span class="va">True</span>, num_workers <span class="op">=</span> <span class="dv">0</span>):</span>
+<span id="cb52-3"><a href="#cb52-3" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Initialize tokenizer</span></span>
+<span id="cb52-4"><a href="#cb52-4" aria-hidden="true" tabindex="-1"></a>    tokenizer <span class="op">=</span> tiktoken.get_encoding(<span class="st">'gpt2'</span>)</span>
+<span id="cb52-5"><a href="#cb52-5" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Create dataset</span></span>
+<span id="cb52-6"><a href="#cb52-6" aria-hidden="true" tabindex="-1"></a>    dataset <span class="op">=</span> GPTDatasetV1(txt, tokenizer, max_length,stride)</span>
+<span id="cb52-7"><a href="#cb52-7" aria-hidden="true" tabindex="-1"></a>    dataloader  <span class="op">=</span> DataLoader(dataset, batch_size<span class="op">=</span>batch_size,shuffle<span class="op">=</span>shuffle,drop_last<span class="op">=</span>drop_last,num_workers<span class="op">=</span>num_workers)</span>
+<span id="cb52-8"><a href="#cb52-8" aria-hidden="true" tabindex="-1"></a>    <span class="co"># drop_last=True drops the last batch if its shorter than the specified batch_size to prevent loss spikes during training</span></span>
+<span id="cb52-9"><a href="#cb52-9" aria-hidden="true" tabindex="-1"></a>    <span class="co"># num_workers is the number of CPU processes to use for preprocessing</span></span>
+<span id="cb52-10"><a href="#cb52-10" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> dataloader</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Testing the <code>dataloader</code> with a batch size of 1 for an LLM with a context size of 4 to develop an intuition of how the <code>GPTDatasetV1</code> class from listing 2.5 and the <code>create_dataloader_v1</code> function work together.</p>
+<div id="c565d781" class="cell" data-execution_count="30">
+<div class="sourceCode cell-code" id="cb53"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb53-1"><a href="#cb53-1" aria-hidden="true" tabindex="-1"></a><span class="cf">with</span> <span class="bu">open</span>(<span class="st">'the_verdict.txt'</span>,<span class="st">'r'</span>,encoding<span class="op">=</span><span class="st">'utf-8'</span>) <span class="im">as</span> f:</span>
+<span id="cb53-2"><a href="#cb53-2" aria-hidden="true" tabindex="-1"></a>    raw_text <span class="op">=</span> f.read()</span>
+<span id="cb53-3"><a href="#cb53-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb53-4"><a href="#cb53-4" aria-hidden="true" tabindex="-1"></a>dataloader <span class="op">=</span> create_dataloader_v1(</span>
+<span id="cb53-5"><a href="#cb53-5" aria-hidden="true" tabindex="-1"></a>    raw_text, batch_size<span class="op">=</span><span class="dv">1</span>, max_length<span class="op">=</span><span class="dv">4</span>, stride<span class="op">=</span><span class="dv">1</span>, shuffle<span class="op">=</span><span class="va">False</span>)</span>
+<span id="cb53-6"><a href="#cb53-6" aria-hidden="true" tabindex="-1"></a>data_iter <span class="op">=</span> <span class="bu">iter</span>(dataloader)</span>
+<span id="cb53-7"><a href="#cb53-7" aria-hidden="true" tabindex="-1"></a>first_batch <span class="op">=</span> <span class="bu">next</span>(data_iter)</span>
+<span id="cb53-8"><a href="#cb53-8" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(first_batch)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[tensor([[  40,  367, 2885, 1464]]), tensor([[ 367, 2885, 1464, 1807]])]</code></pre>
+</div>
+</div>
+<p><code>first_batch</code> variable is two tensors: the first stores the input token IDs and the second contains the target token IDs. Since the <code>max_length</code> is set of 4, each of the two tensors is length 4. Typically an LLM is trained on inputs of size 256 and up.</p>
+<p>The <code>stride</code> is how much each batch is shifted from each other.</p>
+<div id="e5b7a5fb" class="cell" data-execution_count="31">
+<div class="sourceCode cell-code" id="cb55"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb55-1"><a href="#cb55-1" aria-hidden="true" tabindex="-1"></a>second_batch <span class="op">=</span> <span class="bu">next</span>(data_iter)</span>
+<span id="cb55-2"><a href="#cb55-2" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(second_batch)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[tensor([[ 367, 2885, 1464, 1807]]), tensor([[2885, 1464, 1807, 3619]])]</code></pre>
+</div>
+</div>
+<p>A few examples to play with the dataloader function.</p>
+<div id="681e4567" class="cell" data-execution_count="32">
+<div class="sourceCode cell-code" id="cb57"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb57-1"><a href="#cb57-1" aria-hidden="true" tabindex="-1"></a>dataloader <span class="op">=</span> create_dataloader_v1(</span>
+<span id="cb57-2"><a href="#cb57-2" aria-hidden="true" tabindex="-1"></a>    raw_text, batch_size<span class="op">=</span><span class="dv">1</span>, max_length<span class="op">=</span><span class="dv">3</span>, stride<span class="op">=</span><span class="dv">2</span>, shuffle<span class="op">=</span><span class="va">False</span>)</span>
+<span id="cb57-3"><a href="#cb57-3" aria-hidden="true" tabindex="-1"></a>data_iter <span class="op">=</span> <span class="bu">iter</span>(dataloader)</span>
+<span id="cb57-4"><a href="#cb57-4" aria-hidden="true" tabindex="-1"></a>first_batch <span class="op">=</span> <span class="bu">next</span>(data_iter)</span>
+<span id="cb57-5"><a href="#cb57-5" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(first_batch)</span>
+<span id="cb57-6"><a href="#cb57-6" aria-hidden="true" tabindex="-1"></a>second_batch <span class="op">=</span> <span class="bu">next</span>(data_iter)</span>
+<span id="cb57-7"><a href="#cb57-7" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(second_batch)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[tensor([[  40,  367, 2885]]), tensor([[ 367, 2885, 1464]])]
+[tensor([[2885, 1464, 1807]]), tensor([[1464, 1807, 3619]])]</code></pre>
+</div>
+</div>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center" data-bs-toggle="collapse" data-bs-target=".callout-4-contents" aria-controls="callout-4" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Exercise 2.2 Data loaders with different stides and context sizes
+</div>
+<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
+</div>
+<div id="callout-4" class="callout-4-contents callout-collapse collapse">
+<div class="callout-body-container callout-body">
+<p>To develop more intution for how the data loader works, try to run it with differnt settings such as <code>max_length=2</code> and <code>stride=2</code>, and <code>max_length=8</code> and <code>stride=2</code>.</p>
+<div id="723a8be0" class="cell" data-execution_count="33">
+<div class="sourceCode cell-code" id="cb59"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb59-1"><a href="#cb59-1" aria-hidden="true" tabindex="-1"></a>dataloader <span class="op">=</span> create_dataloader_v1(</span>
+<span id="cb59-2"><a href="#cb59-2" aria-hidden="true" tabindex="-1"></a>    raw_text, batch_size<span class="op">=</span><span class="dv">1</span>, max_length<span class="op">=</span><span class="dv">2</span>, stride<span class="op">=</span><span class="dv">2</span>, shuffle<span class="op">=</span><span class="va">False</span>)</span>
+<span id="cb59-3"><a href="#cb59-3" aria-hidden="true" tabindex="-1"></a>data_iter <span class="op">=</span> <span class="bu">iter</span>(dataloader)</span>
+<span id="cb59-4"><a href="#cb59-4" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="bu">next</span>(data_iter))</span>
+<span id="cb59-5"><a href="#cb59-5" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="bu">next</span>(data_iter))</span>
+<span id="cb59-6"><a href="#cb59-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb59-7"><a href="#cb59-7" aria-hidden="true" tabindex="-1"></a>dataloader <span class="op">=</span> create_dataloader_v1(</span>
+<span id="cb59-8"><a href="#cb59-8" aria-hidden="true" tabindex="-1"></a>    raw_text, batch_size<span class="op">=</span><span class="dv">1</span>, max_length<span class="op">=</span><span class="dv">8</span>, stride<span class="op">=</span><span class="dv">2</span>, shuffle<span class="op">=</span><span class="va">False</span>)</span>
+<span id="cb59-9"><a href="#cb59-9" aria-hidden="true" tabindex="-1"></a>data_iter <span class="op">=</span> <span class="bu">iter</span>(dataloader)</span>
+<span id="cb59-10"><a href="#cb59-10" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="bu">next</span>(data_iter))</span>
+<span id="cb59-11"><a href="#cb59-11" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="bu">next</span>(data_iter))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[tensor([[ 40, 367]]), tensor([[ 367, 2885]])]
+[tensor([[2885, 1464]]), tensor([[1464, 1807]])]
+[tensor([[  40,  367, 2885, 1464, 1807, 3619,  402,  271]]), tensor([[  367,  2885,  1464,  1807,  3619,   402,   271, 10899]])]
+[tensor([[ 2885,  1464,  1807,  3619,   402,   271, 10899,  2138]]), tensor([[ 1464,  1807,  3619,   402,   271, 10899,  2138,   257]])]</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<p>Batch sizes of 1, such as observed so far, are useful for illustration. In dep learning, small batch sizes require less memory during training but lead to more noisy model updates.</p>
+<p>An example of using a larger batch size in the current data loader.</p>
+<div id="3dc4e504" class="cell" data-execution_count="34">
+<div class="sourceCode cell-code" id="cb61"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb61-1"><a href="#cb61-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Setting stride to 4 so each input is not overlapping (overfitting) but also not skipping any words (using whole dataset)</span></span>
+<span id="cb61-2"><a href="#cb61-2" aria-hidden="true" tabindex="-1"></a>dataloader <span class="op">=</span> create_dataloader_v1(</span>
+<span id="cb61-3"><a href="#cb61-3" aria-hidden="true" tabindex="-1"></a>    raw_text, batch_size<span class="op">=</span><span class="dv">8</span>, max_length<span class="op">=</span><span class="dv">4</span>, stride<span class="op">=</span><span class="dv">4</span>, shuffle<span class="op">=</span><span class="va">False</span>)</span>
+<span id="cb61-4"><a href="#cb61-4" aria-hidden="true" tabindex="-1"></a>data_iter <span class="op">=</span> <span class="bu">iter</span>(dataloader)</span>
+<span id="cb61-5"><a href="#cb61-5" aria-hidden="true" tabindex="-1"></a>inputs, targets <span class="op">=</span> <span class="bu">next</span>(data_iter)</span>
+<span id="cb61-6"><a href="#cb61-6" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f'Inputs with shape </span><span class="sc">{</span>inputs<span class="sc">.</span>shape<span class="sc">}</span><span class="ch">\n</span><span class="ss">'</span>, inputs)</span>
+<span id="cb61-7"><a href="#cb61-7" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f'</span><span class="ch">\n</span><span class="ss">Targets with shape </span><span class="sc">{</span>targets<span class="sc">.</span>shape<span class="sc">}</span><span class="ch">\n</span><span class="ss">'</span>,targets)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Inputs with shape torch.Size([8, 4])
+ tensor([[   40,   367,  2885,  1464],
+        [ 1807,  3619,   402,   271],
+        [10899,  2138,   257,  7026],
+        [15632,   438,  2016,   257],
+        [  922,  5891,  1576,   438],
+        [  568,   340,   373,   645],
+        [ 1049,  5975,   284,   502],
+        [  284,  3285,   326,    11]])
+
+Targets with shape torch.Size([8, 4])
+ tensor([[  367,  2885,  1464,  1807],
+        [ 3619,   402,   271, 10899],
+        [ 2138,   257,  7026, 15632],
+        [  438,  2016,   257,   922],
+        [ 5891,  1576,   438,   568],
+        [  340,   373,   645,  1049],
+        [ 5975,   284,   502,   284],
+        [ 3285,   326,    11,   287]])</code></pre>
+</div>
+</div>
+</section>
+<section id="creating-token-embeddings" class="level2">
+<h2 class="anchored" data-anchor-id="creating-token-embeddings">2.7 Creating token embeddings</h2>
+<p>The last step to prepare the input text for LLM training is to convert the token IDs into embedding vectors. Initially the weights for the embeddings are random, but then are trained in the learning process.</p>
+<p>A continuous vector representation, or embedding, is necessary since GPT-like LLMs are deep neural networks trained with the backpropagation algorithm.</p>
+<p>Assume you begin with the following input token with IDs 2,3,5, and 1.</p>
+<div id="3d4b2bd5" class="cell" data-execution_count="35">
+<div class="sourceCode cell-code" id="cb63"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb63-1"><a href="#cb63-1" aria-hidden="true" tabindex="-1"></a>input_ids <span class="op">=</span> torch.tensor([<span class="dv">2</span>,<span class="dv">3</span>,<span class="dv">5</span>,<span class="dv">1</span>])</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Then the vocabularly is small with only 6 words (BPE has 50,257) and create embeddings of size 3 (in GPT-3 the embedding size is 12,288 dimensions)</p>
+<div id="a9388ac5" class="cell" data-execution_count="36">
+<div class="sourceCode cell-code" id="cb64"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb64-1"><a href="#cb64-1" aria-hidden="true" tabindex="-1"></a>vocab_size <span class="op">=</span> <span class="dv">6</span></span>
+<span id="cb64-2"><a href="#cb64-2" aria-hidden="true" tabindex="-1"></a>output_dim <span class="op">=</span> <span class="dv">3</span></span>
+<span id="cb64-3"><a href="#cb64-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Set seed for reproducibility</span></span>
+<span id="cb64-4"><a href="#cb64-4" aria-hidden="true" tabindex="-1"></a>torch.manual_seed(<span class="dv">123</span>)</span>
+<span id="cb64-5"><a href="#cb64-5" aria-hidden="true" tabindex="-1"></a>embedding_layer <span class="op">=</span> torch.nn.Embedding(num_embeddings<span class="op">=</span>vocab_size,embedding_dim<span class="op">=</span>output_dim) <span class="co"># num_embeddings is number of words in vocab, embedding_dim is number of embedding dimensions]</span></span>
+<span id="cb64-6"><a href="#cb64-6" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f'Dimensions of embeddings </span><span class="sc">{</span>embedding_layer<span class="sc">.</span>weight<span class="sc">.</span>shape<span class="sc">}</span><span class="ch">\n</span><span class="ss">'</span>,embedding_layer.weight)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Dimensions of embeddings torch.Size([6, 3])
+ Parameter containing:
+tensor([[ 0.3374, -0.1778, -0.1690],
+        [ 0.9178,  1.5810,  1.3010],
+        [ 1.2753, -0.2010, -0.1606],
+        [-0.4015,  0.9666, -1.1481],
+        [-1.1589,  0.3255, -0.6315],
+        [-2.8400, -0.7849, -1.4096]], requires_grad=True)</code></pre>
+</div>
+</div>
+<p>The weight matrix is full of small, random values. Which is become optimized during LLM training. Each row is for each of the six possible tokens in the vocabularly, and there is one column for each of the three embedding dimensions.</p>
+<p>Now apply it to a token ID to obtain an embedding vector.</p>
+<div id="c0fbd571" class="cell" data-execution_count="37">
+<div class="sourceCode cell-code" id="cb66"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb66-1"><a href="#cb66-1" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(embedding_layer(torch.tensor([<span class="dv">3</span>])))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>tensor([[-0.4015,  0.9666, -1.1481]], grad_fn=&lt;EmbeddingBackward0&gt;)</code></pre>
+</div>
+</div>
+<p>When compared to previous embedding matrix with all 6 words in the vocabularly, we can see this row corresponds to the 4th row (index 3). So essentially the embedding layer is a lookup operation that retrieves rows from the embedding layer’s weight matrix via a token ID. You give it a token ID, it looks up what row to return to give a continuous value to represent it and feed into the LLM.</p>
+<div id="c7f5e312" class="cell" data-execution_count="38">
+<div class="sourceCode cell-code" id="cb68"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb68-1"><a href="#cb68-1" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f'Dimensions of embeddings </span><span class="sc">{</span>embedding_layer<span class="sc">.</span>weight<span class="sc">.</span>shape<span class="sc">}</span><span class="ch">\n</span><span class="ss">'</span>,embedding_layer.weight)</span>
+<span id="cb68-2"><a href="#cb68-2" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(embedding_layer(torch.tensor([<span class="dv">3</span>])))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Dimensions of embeddings torch.Size([6, 3])
+ Parameter containing:
+tensor([[ 0.3374, -0.1778, -0.1690],
+        [ 0.9178,  1.5810,  1.3010],
+        [ 1.2753, -0.2010, -0.1606],
+        [-0.4015,  0.9666, -1.1481],
+        [-1.1589,  0.3255, -0.6315],
+        [-2.8400, -0.7849, -1.4096]], requires_grad=True)
+tensor([[-0.4015,  0.9666, -1.1481]], grad_fn=&lt;EmbeddingBackward0&gt;)</code></pre>
+</div>
+</div>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>When looking at embeddings compared to one-hot encoding, the embedding layer approach is essentially a more efficient way of implementing one-hot encoding followed by matrix multiplication in a fully connected layer. See <a href="https://github.com/rasbt/LLMs-from-scratch/blob/main/ch02/03_bonus_embedding-vs-matmul/embeddings-and-linear-layers.ipynb">this link</a> for the comparison.</p>
+</div>
+</div>
+<p>Extending this notion to all four input IDs</p>
+<div id="5f9dc332" class="cell" data-execution_count="39">
+<div class="sourceCode cell-code" id="cb70"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb70-1"><a href="#cb70-1" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(embedding_layer(input_ids))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>tensor([[ 1.2753, -0.2010, -0.1606],
+        [-0.4015,  0.9666, -1.1481],
+        [-2.8400, -0.7849, -1.4096],
+        [ 0.9178,  1.5810,  1.3010]], grad_fn=&lt;EmbeddingBackward0&gt;)</code></pre>
+</div>
+</div>
+<p>Now there’s a continuous value representation of each token ID, there needs to be positional information implemented as well.</p>
+</section>
+<section id="encoding-word-positions" class="level2">
+<h2 class="anchored" data-anchor-id="encoding-word-positions">2.8 Encoding word positions</h2>
+<p>Currently, the embedding layer converts a token ID into the same vector representation regardless of where it is located in the input sequence. Later operations conducted with the self-attention mechanism also do not take into account the position of words, it only helps with the relationship between words, it is helpful to inject positional information into the LLM.</p>
+<p>There are two methods to do position-aware embeddings: realtive positional embeddings and absolute positional embeddings. Absolute positional embeddings are directly associated with specific positions in a sequence. Relative positional embeddings are concerened with the distance between tokens. This means the model learns the relationships in terms of “how far apart” rather than “at which exact position”. Which might result in better generalization to input sequences with varying lengths.</p>
+<p>GPT models use absolute positional embeddings that are optimized during the training process rather than being fixed or predefined like the positional encodings in the original transformer model.</p>
+<p>Previously, only small embedding sizes were used for simplicity. However to be realistic the input token will be encoded into a 256-dimensional verctor representation, which is smaller than GPT-3 (12,288 dimensions) but still reasonable for experiments. The vocabularly size will be inherited from the BPE tokenizer earlier (50,257).</p>
+<div id="319c279a" class="cell" data-execution_count="40">
+<div class="sourceCode cell-code" id="cb72"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb72-1"><a href="#cb72-1" aria-hidden="true" tabindex="-1"></a>vocab_size <span class="op">=</span> <span class="dv">50257</span></span>
+<span id="cb72-2"><a href="#cb72-2" aria-hidden="true" tabindex="-1"></a>output_dim <span class="op">=</span> <span class="dv">256</span></span>
+<span id="cb72-3"><a href="#cb72-3" aria-hidden="true" tabindex="-1"></a>token_embedding_layer <span class="op">=</span> torch.nn.Embedding(vocab_size, output_dim)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Using <code>token_embedding_layer</code>, sampling data from the data loader, this will embed each token in each batch into a 256-dimensional vector. With a batch size of eight with four tokens each, the resulting tensor is 8 <span class="math inline">\(\times\)</span> 4 <span class="math inline">\(\times\)</span> 256 tensor.</p>
+<div id="98f09631" class="cell" data-execution_count="41">
+<div class="sourceCode cell-code" id="cb73"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb73-1"><a href="#cb73-1" aria-hidden="true" tabindex="-1"></a>max_length <span class="op">=</span> <span class="dv">4</span></span>
+<span id="cb73-2"><a href="#cb73-2" aria-hidden="true" tabindex="-1"></a>dataloader <span class="op">=</span> create_dataloader_v1(</span>
+<span id="cb73-3"><a href="#cb73-3" aria-hidden="true" tabindex="-1"></a>    raw_text, batch_size <span class="op">=</span> <span class="dv">8</span>, max_length <span class="op">=</span> max_length,</span>
+<span id="cb73-4"><a href="#cb73-4" aria-hidden="true" tabindex="-1"></a>    stride <span class="op">=</span> max_length, shuffle<span class="op">=</span><span class="va">False</span></span>
+<span id="cb73-5"><a href="#cb73-5" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb73-6"><a href="#cb73-6" aria-hidden="true" tabindex="-1"></a>data_iter <span class="op">=</span> <span class="bu">iter</span>(dataloader)</span>
+<span id="cb73-7"><a href="#cb73-7" aria-hidden="true" tabindex="-1"></a>inputs, targets <span class="op">=</span> <span class="bu">next</span>(data_iter)</span>
+<span id="cb73-8"><a href="#cb73-8" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f'Inputs with shape </span><span class="sc">{</span>inputs<span class="sc">.</span>shape<span class="sc">}</span><span class="ch">\n</span><span class="ss">'</span>, inputs)</span>
+<span id="cb73-9"><a href="#cb73-9" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f'</span><span class="ch">\n</span><span class="ss">Targets with shape </span><span class="sc">{</span>targets<span class="sc">.</span>shape<span class="sc">}</span><span class="ch">\n</span><span class="ss">'</span>,targets)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Inputs with shape torch.Size([8, 4])
+ tensor([[   40,   367,  2885,  1464],
+        [ 1807,  3619,   402,   271],
+        [10899,  2138,   257,  7026],
+        [15632,   438,  2016,   257],
+        [  922,  5891,  1576,   438],
+        [  568,   340,   373,   645],
+        [ 1049,  5975,   284,   502],
+        [  284,  3285,   326,    11]])
+
+Targets with shape torch.Size([8, 4])
+ tensor([[  367,  2885,  1464,  1807],
+        [ 3619,   402,   271, 10899],
+        [ 2138,   257,  7026, 15632],
+        [  438,  2016,   257,   922],
+        [ 5891,  1576,   438,   568],
+        [  340,   373,   645,  1049],
+        [ 5975,   284,   502,   284],
+        [ 3285,   326,    11,   287]])</code></pre>
+</div>
+</div>
+<p>The token ID tensor is a 8 <span class="math inline">\(\times\)</span> 4 dimensional, indicating each batch consists of eight text samples with four tokens each. Implementing the embedding layer to embed these token IDs into 256-dimensional vectors:</p>
+<div id="3319293a" class="cell" data-execution_count="42">
+<div class="sourceCode cell-code" id="cb75"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb75-1"><a href="#cb75-1" aria-hidden="true" tabindex="-1"></a>token_embeddings <span class="op">=</span> token_embedding_layer(inputs)</span>
+<span id="cb75-2"><a href="#cb75-2" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(token_embeddings.shape)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>torch.Size([8, 4, 256])</code></pre>
+</div>
+</div>
+<p>Now that there is a continuous value vector for each token ID, time to implement absolute embeddings which will be the same dimension as the <code>token_embeddings</code> layer.</p>
+<div id="5a6825ee" class="cell" data-execution_count="43">
+<div class="sourceCode cell-code" id="cb77"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb77-1"><a href="#cb77-1" aria-hidden="true" tabindex="-1"></a>context_length <span class="op">=</span> max_length</span>
+<span id="cb77-2"><a href="#cb77-2" aria-hidden="true" tabindex="-1"></a>pos_embedding_layer <span class="op">=</span> torch.nn.Embedding(context_length, output_dim)</span>
+<span id="cb77-3"><a href="#cb77-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Assign absolute position of each token for a single batch</span></span>
+<span id="cb77-4"><a href="#cb77-4" aria-hidden="true" tabindex="-1"></a>pos_embeddings <span class="op">=</span> pos_embedding_layer(torch.arange(context_length)) </span>
+<span id="cb77-5"><a href="#cb77-5" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(pos_embeddings.shape)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>torch.Size([4, 256])</code></pre>
+</div>
+</div>
+<p>Now the <code>pos_embeddings</code> can be added directly to each of the eight batches.</p>
+<div id="5f7e4550" class="cell" data-execution_count="44">
+<div class="sourceCode cell-code" id="cb79"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb79-1"><a href="#cb79-1" aria-hidden="true" tabindex="-1"></a>input_embeddings <span class="op">=</span> token_embeddings <span class="op">+</span> pos_embeddings <span class="co"># aligns by matching dimension</span></span>
+<span id="cb79-2"><a href="#cb79-2" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(input_embeddings.shape)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>torch.Size([8, 4, 256])</code></pre>
+</div>
+</div>
+<p>To summarize the work done in this chapter. The input embedding pipeline before the decoder-only transformer begins its operations.</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="C2_Summary_Picture.png" class="img-fluid figure-img"></p>
+<figcaption>Summary of Input Embedding Pipeline</figcaption>
+</figure>
+</div>
 </section>
 </section>
 

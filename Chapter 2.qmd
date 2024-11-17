@@ -497,3 +497,56 @@ print(embedding_layer(input_ids))
 Now there's a continuous value representation of each token ID, there needs to be positional information implemented as well. 
 
 ## 2.8 Encoding word positions
+Currently, the embedding layer converts a token ID into the same vector representation regardless of where it is located in the input sequence. Later operations conducted with the self-attention mechanism also do not take into account the position of words, it only helps with the relationship between words, it is helpful to inject positional information into the LLM.
+
+There are two methods to do position-aware embeddings: realtive positional embeddings and absolute positional embeddings. Absolute positional embeddings are directly associated with specific positions in a sequence. Relative positional embeddings are concerened with the distance between tokens. This means the model learns the relationships in terms of "how far apart" rather than "at which exact position". Which might result in better generalization to input sequences with varying lengths.
+
+GPT models use absolute positional embeddings that are optimized during the training process rather than being fixed or predefined like the positional encodings in the original transformer model. 
+
+Previously, only small embedding sizes were used for simplicity. However to be realistic the input token will be encoded into a 256-dimensional verctor representation, which is smaller than GPT-3 (12,288 dimensions) but still reasonable for experiments. The vocabularly size will be inherited from the BPE tokenizer earlier (50,257). 
+
+```{python}
+vocab_size = 50257
+output_dim = 256
+token_embedding_layer = torch.nn.Embedding(vocab_size, output_dim)
+```
+Using `token_embedding_layer`, sampling data from the data loader, this will embed each token in each batch into a 256-dimensional vector. With a batch size of eight with four tokens each, the resulting tensor is 8 $\times$ 4 $\times$ 256 tensor. 
+
+```{python}
+max_length = 4
+dataloader = create_dataloader_v1(
+    raw_text, batch_size = 8, max_length = max_length,
+    stride = max_length, shuffle=False
+)
+data_iter = iter(dataloader)
+inputs, targets = next(data_iter)
+print(f'Inputs with shape {inputs.shape}\n', inputs)
+print(f'\nTargets with shape {targets.shape}\n',targets)
+```
+
+The token ID tensor is a 8 $\times$ 4 dimensional, indicating each batch consists of eight text samples with four tokens each. Implementing the embedding layer to embed these token IDs into 256-dimensional vectors:
+
+```{python}
+token_embeddings = token_embedding_layer(inputs)
+print(token_embeddings.shape)
+```
+
+Now that there is a continuous value vector for each token ID, time to implement absolute embeddings which will be the same dimension as the `token_embeddings` layer.
+
+```{python}
+context_length = max_length
+pos_embedding_layer = torch.nn.Embedding(context_length, output_dim)
+# Assign absolute position of each token for a single batch
+pos_embeddings = pos_embedding_layer(torch.arange(context_length)) 
+print(pos_embeddings.shape)
+```
+Now the `pos_embeddings` can be added directly to each of the eight batches. 
+
+```{python}
+input_embeddings = token_embeddings + pos_embeddings # aligns by matching dimension
+print(input_embeddings.shape)
+```
+
+To summarize the work done in this chapter. The input embedding pipeline before the decoder-only transformer begins its operations.
+
+![Summary of Input Embedding Pipeline](C2_Summary_Picture.png){.lightbox}
