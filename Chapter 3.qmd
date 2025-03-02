@@ -1,0 +1,106 @@
+---
+title: "Chapter 3 - Coding attention mechanisms"
+format: html
+---
+
+# 3 - Coding attention mechanisms
+Previously, the data went through a transformation of text data into a mathematical operational format. Specifically, the process of encoding involved the splitting of words and subwords into tokens, which then could be encoded into vector representations (encodings) for the LLM. Now the focus shifts towards the attention mechanisms. This notebook will implement four variants of attention mechanisms which build upon each other and grow in complexity. Starting with simplified self-attention, followed by self-attention, causal attention, and ending with multi-head attention. The first implements the broad idea, the second has trainable weights, the third allows a model to consider only previous and current inputs, and the final allows simultaneous attention to information from different representation spaces. d
+
+## 3.1 The problem with modeling long sequences
+Models that attempt to translate try to substitute word-for-word when translating, which works sometimes but not always. Usually the positioning of the word in a sentence matters in relation to other words. Previous models, such as recurrent neural networks (RNNs), used in tasks such as language translation, used an *encoder/decoder* method to overcome this. RNNs took the previous encoded outputs from the previous input as input for the current step, making them well-suited for sequential data. 
+
+## 3.2 Capturing data dependencies with attention mechanisms
+RNNs work for translating shorter sentences, but struggle with longer texts since they do not have direct access to previous words in the input. The *Bahdanau attention* mechanism for RNNs was introduced in 2014, where the decoder can selectively access different parts of the input sequence. This mechanism is the basis of the original *transformer* architecture. 
+
+## 3.3 Attending to different parts of the input with self-attention
+Self-attention serves as the cornerstone of every LLM based on the transformer architecture. 
+::: {.callout-note}
+## The ``self'' self-attention
+In self-attention, the "self" refers to the mechanism's ability to compute attention weights by relating different positions with a single input sequence. It assess and learns the relationships between various parts of the input. 
+
+Contrasting to traditional attention mechanisms, wwhere the focus is on the relationships between elements of two different sequences. 
+:::
+
+## 3.3.1 A simple self-attention mechanism without trainable weights
+Example sentence with some arbitrary token embeddings for each word "Your journey starts with one step". These will be three dimensional vectors for each word. 
+
+```{python}
+import torch
+inputs = torch.tensor(
+  [[0.43, 0.15, 0.89], # Your (x^1)
+   [0.55, 0.87, 0.66], # journey (x^2)
+   [0.57, 0.85, 0.64], # starts (x^3)
+   [0.22, 0.58, 0.33], # with (x^4)
+   [0.77, 0.25, 0.10], # one (x^5)
+   [0.05, 0.80, 0.55]] # step (x^6)
+)
+```
+
+Now compute the intermediate values $\omega_{ij}$, referred to as attention scores, where $i,j$ are the two inputs being compared. $x^{(2)}$ is the query (input), and the attention scores are the dot product of the query $x^{(2)}$, with every other input token:
+
+```{python}
+query = inputs[1]
+attn_scores_2 = torch.empty(inputs.shape[0])
+for i, x_i in enumerate(inputs):
+    attn_scores_2[i] = torch.dot(x_i,query)
+print(attn_scores_2)
+```
+
+These values can range from whatever values the inputs range, so they should be normalized for downstream calcs. Normalizing will put their values between zero and one. 
+
+```{python}
+attn_weights_2_tmp = attn_scores_2 / attn_scores_2.sum()
+print('Attention Weights:', attn_weights_2_tmp)
+print('Sum:', attn_weights_2_tmp.sum())
+```
+
+Instead of the normalization done here, typically the softmax function is used to ensure positivity and relates them more towards proabilities or relative importance. This implementation is better at managing extreme values and favorable gradients for training. The softmax function of $n$ observations is $\frac{e^{x_i}}{\sum_i^n e^{x_i}}$. 
+
+```{python}
+attn_weights_2 = torch.softmax(attn_scores_2,dim = 0)
+print('Attention Weights:', attn_weights_2)
+print('Sum:', attn_weights_2.sum())
+```
+
+Last, we get the context vector $z^{(2)}$ by multiplying the embedded input tokens, $x^{(i)}$ with the corresponding attention weights and then summing the resulting vectors. Therefore, $z^{(2)}$ si the weighted sum of all input vectors, obtained by multiplying each input vector by its corresponding attention weight. 
+
+```{python}
+# attn_weights_2[0] * inputs[0] + attn_weights_2[1] * inputs[1] ... attn_weights_2[7] * inputs[7]
+query = inputs[1]
+context_vec_2 = torch.zeros(query.shape)
+for i, x_i in enumerate(inputs):
+    context_vec_2 += attn_weights_2[i]*x_i
+print(context_vec_2)
+```
+
+### 3.3.2 Computing attention weights for all input tokens
+Three main steps. 
+1. Compute attention scores (dot product of inputs with each other)
+2. Compute attention weights (normalize)
+3. Compute context vectors (multiply weights by inputs)
+
+The previous subsection only did one input query, but the computation can be extended to do all inputs. Almostr think of a correlation matrix between every pairwise combination of words. 
+
+```{python}
+## Step 1
+attn_scores = torch.empty(inputs.shape[0],inputs.shape[0])
+for i, x_i in enumerate(inputs):
+    for j, x_j in enumerate(inputs):
+        attn_scores[i,j] = torch.dot(x_i,x_j)
+
+# Faster way is matrix multiplication
+attn_scores = inputs @ inputs.T
+print(attn_scores)
+
+## Step 2
+attn_weights = torch.softmax(attn_scores,dim=-1) # dim=-1 is the last dimension (in our case the second dimension so equal to dim=1)
+print(attn_weights)
+# Check we did the right dimension for the softmax aka each row is a word/token/embedding/input (Sum up across the rows aka sum the columns)
+print('All row sums:',attn_weights.sum(dim=-1)) # Each input is a row
+
+## Step 3
+all_context_vecs = attn_weights @ inputs # [Observations X Weights] @ [Inputs X Embedding Dimension]
+print(all_context_vecs) # Prints three dimensional context vector for each observation. 
+```
+
+## 3.4 Implementing self-attention with trainable weights
