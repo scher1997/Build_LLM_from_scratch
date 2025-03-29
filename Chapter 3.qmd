@@ -104,3 +104,457 @@ print(all_context_vecs) # Prints three dimensional context vector for each obser
 ```
 
 ## 3.4 Implementing self-attention with trainable weights
+Now to implement the self-attention mechanism from the original transformer model. 
+
+### 3.4.1
+Three trainable weight matrices are used $W_q$, $W_k$, and $W_v$. These three matrices are sued to project the embedded input tokens $x^{(i)}$ into query, key, and value vectors. Similar to before, the input will be $x^{(2)}$ from the six word input sentence. 
+
+```{python}
+x_2 = inputs[1] # The second word
+d_in = inputs.shape[1] # The input embedding size, d=3
+d_out = 2 # output embedding size, d_out = 2
+```
+
+::: {.callout-tip}
+## Input and output dimensions
+In GPT-like models, the input and output dimensions are usually the same, but for learning purposes they're different here. 
+:::
+
+Now initialize the weight matrices $W_q$, $W_k$, and $W_v$. 
+```{python}
+torch.manual_seed(123)
+W_query = torch.nn.Parameter(torch.rand(d_in,d_out),requires_grad=False)
+W_key = torch.nn.Parameter(torch.rand(d_in,d_out),requires_grad=False)
+W_value = torch.nn.Parameter(torch.rand(d_in,d_out),requires_grad=False)
+```
+
+Computing the query, key, and value vectors, which are the result of the dot product between our input [1 X 3] row in our embedded input matrix and our weight matrices [3 X 2] so the resulting vectors should be [1 X 2].
+
+```{python}
+query_2 = x_2@W_query
+key_2 = x_2@W_key
+value_2 = x_2@W_value
+print(query_2)
+```
+::: {.callout-note}
+## Weight parameters vs. attention weights
+The ``weights'' in the former blocks are the values of a neural network which are optimized during training. Attention weights determine the extent to which aa context vector depends on the different parts of the input. Simply put, the weights are learned coefficients and the attention weights are dynamic, context-specific values.  For example, the weights relate to a traditional fully connected multi-layer perceptron, while attention weights are the outputs after the weights are used to get attention scores and then normalized via softmax.  
+:::
+
+The unscaled attention score is computed as a dot product between the query and the key vectors. Slightly different than before, where we did the dot-product between the inputs but instead through the query and the key vectors of the other inputs. 
+
+So let's grab all the keys and values to get since they're required to get our context vector $z^{(2)}$
+
+```{python}
+keys = inputs @ W_key
+values = inputs @ W_value
+print('Shape of all keys vectors',keys.shape)
+print('Shape of all values vectors',values.shape)
+```
+Now get the attention scores, starting with $\omega_{22}$
+
+```{python}
+keys_2 = keys[1]
+attn_score_22 = query_2 @ keys_2
+print(attn_score_22)
+```
+Generalized to all attention scores. We have our query vector [1 x 2], and a matrix (multiple row vectors) where its a [6 x 2] and each row represents an input. So we want the scores for all these keys vectors (inputs) against our query input. So let's transpose the keys matrix so the output is a [1 x 6] where they're the attention scores for each of the six inputs. 
+
+```{python}
+attn_scores_2 = query_2 @ keys.T
+print(attn_scores_2)
+```
+Then converting them to attention weights by utilizing the softmax function. However, now we scale the attention scores by dividing them by the square root of the embedding dimension of the keys. This is the scaling of the ``scaled'' dot product attention mechanism. 
+
+```{python}
+d_k = keys.shape[-1] # last dimension of the keys vector (d_out)
+attn_weights_2 = torch.softmax(attn_scores_2 / d_k**0.5, dim = -1)
+print(attn_weights_2)
+```
+
+::: {.callout-note collapse="true"}
+## Thought exercise
+
+Why does it matter to use the scaled-dot product attention? Why not just the dot product attention? Can't the softmax function do it for us?
+
+Two main reasons
+1. **Numerical stability:** Without scaling, as the embedding dimension increases, the dot products can become very large.
+2. **Softmax saturation:** When inputs to softmax are very large (either positive or negative), the softmax function "saturates," meaning it puts nearly all probability mass on a single element. This effectively makes the output of softmax close to a one-hot vector where one value is ≈1 and the rest are ≈0.
+
+
+So the softmax saturation leads to extremely small gradients and now we have the ``vanishing gradient problem'' so scaling helps to provide a constant variance between the gradients regardless of input dimension. 
+So imagine attention scores that start to become extremely large or small, while the others might appear close but are really not in the same order of magnitude. Also examine when you bring in the fact that the gradient information is flowing through here to update the weights used to get the vectors used for these computations, and then they go multiple layers without ever scaling... A quick example by using our same example sentence but the weights are initialized differently to prove a point. 
+
+```{python}
+import torch
+
+# Set random seed for reproducibility
+torch.manual_seed(42)
+
+# Let's say we have a small input sequence of 2 tokens
+# Each token has been embedded into a 4-dimensional space (small for simplicity)
+input_embeddings = torch.tensor([
+    [1.0, 0.5, 0.3, 0.2],  # First token embedding
+    [0.1, 0.8, 0.4, 0.6]   # Second token embedding
+], dtype=torch.float32)
+
+# Let's set our embedding dimension
+d_model = 4
+d_k = d_model  # In practice, this might be d_model/num_heads
+
+# Initialize weight matrices for Q, K, V
+# For consistency with the numpy example, I'll initialize with normal distribution
+W_q = torch.randn(d_model, d_k)
+W_k = torch.randn(d_model, d_k)
+W_v = torch.randn(d_model, d_k)
+
+# Compute Q, K, V by projecting the input embeddings
+Q = torch.matmul(input_embeddings, W_q)  # shape: (2, 4)
+K = torch.matmul(input_embeddings, W_k)  # shape: (2, 4)
+V = torch.matmul(input_embeddings, W_v)  # shape: (2, 4)
+
+# print("Query matrix (Q):")
+# print(Q)
+# print("\nKey matrix (K):")
+# print(K)
+# print("\nValue matrix (V):")
+# print(V)
+
+# Compute attention scores without scaling
+# Q × K^T gives us similarity scores between each query and each key
+attention_scores_without_scaling = torch.matmul(Q, K.transpose(0, 1))  # shape: (2, 2)
+print("\nAttention scores WITHOUT scaling:")
+print(attention_scores_without_scaling)
+
+# Apply softmax to get attention weights without scaling
+# Softmax normalizes the scores into probabilities (they sum to 1)
+attention_weights_without_scaling = torch.softmax(attention_scores_without_scaling, dim=-1)
+print("\nAttention weights WITHOUT scaling (after softmax):")
+print(attention_weights_without_scaling)
+
+# Now let's see what happens with scaling
+# The scaling factor is the square root of the key dimension
+scaling_factor = torch.sqrt(torch.tensor(d_k, dtype=torch.float32))
+attention_scores_with_scaling = torch.matmul(Q, K.transpose(0, 1)) / scaling_factor
+print("\nAttention scores WITH scaling:")
+print(attention_scores_with_scaling)
+
+# Apply softmax to get attention weights with scaling
+attention_weights_with_scaling = torch.softmax(attention_scores_with_scaling, dim=-1)
+print("\nAttention weights WITH scaling (after softmax):")
+print(attention_weights_with_scaling)
+
+# Final attended values - we weight the values by the attention weights
+attended_values_without_scaling = torch.matmul(attention_weights_without_scaling, V)
+attended_values_with_scaling = torch.matmul(attention_weights_with_scaling, V)
+
+print("\nAttended values WITHOUT scaling:")
+print(attended_values_without_scaling)
+print("\nAttended values WITH scaling:")
+print(attended_values_with_scaling)
+
+```
+This only gets worse in higher dimensions because these dot products would be summing over 512 or 1024 or even higher terms. 
+```{python}
+# To make the difference more obvious, let's try a higher dimension
+print("\n\n--- HIGHER DIMENSION EXAMPLE ---\n")
+
+# Let's increase to 64 dimensions to see a more dramatic effect
+d_model_large = 64
+d_k_large = d_model_large
+
+# Create random embeddings and weights
+large_embeddings = torch.randn(2, d_model_large)
+W_q_large = torch.randn(d_model_large, d_k_large)
+W_k_large = torch.randn(d_model_large, d_k_large)
+W_v_large = torch.randn(d_model_large, d_k_large)
+
+# Compute Q, K, V
+Q_large = torch.matmul(large_embeddings, W_q_large)
+K_large = torch.matmul(large_embeddings, W_k_large)
+V_large = torch.matmul(large_embeddings, W_v_large)
+
+# Without scaling
+scores_large_no_scaling = torch.matmul(Q_large, K_large.transpose(0, 1))
+weights_large_no_scaling = torch.softmax(scores_large_no_scaling, dim=-1)
+
+# With scaling
+scaling_factor_large = torch.sqrt(torch.tensor(d_k_large, dtype=torch.float32))
+scores_large_with_scaling = torch.matmul(Q_large, K_large.transpose(0, 1)) / scaling_factor_large
+weights_large_with_scaling = torch.softmax(scores_large_with_scaling, dim=-1)
+
+print("Attention weights WITHOUT scaling (64 dimensions):")
+print(weights_large_no_scaling)
+print("\nAttention weights WITH scaling (64 dimensions):")
+print(weights_large_with_scaling)
+
+# Calculate the entropy of the attention distributions
+# Higher entropy means more distributed attention
+def entropy(probs):
+    return -torch.sum(probs * torch.log(probs + 1e-9), dim=-1)
+
+entropy_small_no_scaling = entropy(attention_weights_without_scaling)
+entropy_small_with_scaling = entropy(attention_weights_with_scaling)
+entropy_large_no_scaling = entropy(weights_large_no_scaling)
+entropy_large_with_scaling = entropy(weights_large_with_scaling)
+
+print("\n--- ENTROPY ANALYSIS (higher means more distributed attention) ---")
+print(f"Small dimension (d_k={d_k}):")
+print(f"  Without scaling: {entropy_small_no_scaling}")
+print(f"  With scaling: {entropy_small_with_scaling}")
+print(f"Large dimension (d_k={d_k_large}):")
+print(f"  Without scaling: {entropy_large_no_scaling}")
+print(f"  With scaling: {entropy_large_with_scaling}")
+```
+
+Higher entropy means attention is more distributed across tokens rather than focusing on just one token. This is particularly important in the early stages of training when the model is still learning which tokens to attend to.
+
+```{python}
+#| echo: false
+import torch
+import torch.nn.functional as F
+import matplotlib.pyplot as plt
+import numpy as np
+import seaborn as sns
+
+# Set style for better visuals
+plt.style.use('seaborn')
+sns.set_palette("viridis")
+
+# Function to compute attention weights with and without scaling
+def compute_attention(d_k, batch_size=100, sequence_length=4):
+    torch.manual_seed(42)  # For reproducibility
+    
+    # Create random query and key matrices
+    Q = torch.randn(batch_size, sequence_length, d_k)
+    K = torch.randn(batch_size, sequence_length, d_k)
+    
+    # Without scaling
+    logits_without_scaling = torch.matmul(Q, K.transpose(1, 2))
+    attn_without_scaling = F.softmax(logits_without_scaling, dim=-1)
+    
+    # With scaling
+    scaling_factor = torch.sqrt(torch.tensor(d_k, dtype=torch.float32))
+    logits_with_scaling = torch.matmul(Q, K.transpose(1, 2)) / scaling_factor
+    attn_with_scaling = F.softmax(logits_with_scaling, dim=-1)
+    
+    return attn_without_scaling, attn_with_scaling
+
+# Function to compute entropy
+def entropy(probs):
+    return -torch.sum(probs * torch.log(probs + 1e-9), dim=-1)
+
+# Dimensions to test
+dimensions = [4, 8, 16, 32, 64, 128, 256, 512]
+batch_size = 1000
+sequence_length = 6  # Using slightly longer sequence to show more interesting patterns
+
+# Store results
+entropies_without_scaling = []
+entropies_with_scaling = []
+max_entropy = np.log(sequence_length)  # Maximum possible entropy for reference
+
+# Compute entropy for each dimension
+for d_k in dimensions:
+    attn_without_scaling, attn_with_scaling = compute_attention(d_k, batch_size, sequence_length)
+    
+    # Calculate entropies
+    entropy_without = entropy(attn_without_scaling).mean().item()
+    entropy_with = entropy(attn_with_scaling).mean().item()
+    
+    entropies_without_scaling.append(entropy_without)
+    entropies_with_scaling.append(entropy_with)
+    
+    print(f"d_k = {d_k}:")
+    print(f"  Without scaling: entropy = {entropy_without:.4f}")
+    print(f"  With scaling: entropy = {entropy_with:.4f}")
+
+# Plot 1: Line graph of entropy by dimension
+plt.figure(figsize=(12, 6))
+plt.plot(dimensions, entropies_without_scaling, 'o-', linewidth=2, label='Without Scaling')
+plt.plot(dimensions, entropies_with_scaling, 's-', linewidth=2, label='With Scaling')
+plt.axhline(y=max_entropy, color='r', linestyle='--', alpha=0.7, label='Maximum Entropy')
+
+plt.xlabel('Dimension (d_k)', fontsize=12)
+plt.ylabel('Average Entropy of Attention Weights', fontsize=12)
+plt.xscale('log', base=2)
+plt.title('Effect of Scaling on Attention Entropy Across Dimensions', fontsize=14)
+plt.legend(fontsize=12)
+plt.grid(True)
+
+# Plot 2: Distribution of attention weights for specific dimensions
+plt.figure(figsize=(15, 10))
+
+# Select dimensions to visualize
+dims_to_show = [4, 64, 512]
+for i, d_k in enumerate(dims_to_show):
+    attn_without_scaling, attn_with_scaling = compute_attention(d_k, 1, sequence_length)
+    
+    # Extract a single sample and flatten to show all attention weights
+    sample_without = attn_without_scaling[0].flatten().detach().numpy()
+    sample_with = attn_with_scaling[0].flatten().detach().numpy()
+    
+    # Plot histograms side by side
+    plt.subplot(len(dims_to_show), 2, 2*i+1)
+    plt.hist(sample_without, bins=30, alpha=0.7, color='blue')
+    plt.title(f'Without Scaling (d_k={d_k})', fontsize=12)
+    plt.xlabel('Attention Weight Value', fontsize=10)
+    plt.ylabel('Frequency', fontsize=10)
+    
+    plt.subplot(len(dims_to_show), 2, 2*i+2)
+    plt.hist(sample_with, bins=30, alpha=0.7, color='green')
+    plt.title(f'With Scaling (d_k={d_k})', fontsize=12)
+    plt.xlabel('Attention Weight Value', fontsize=10)
+    
+plt.tight_layout()
+
+# Plot 3: Heatmaps of attention matrices for a specific dimension
+plt.figure(figsize=(15, 6))
+d_k_heatmap = 64  # Use a medium-sized dimension for the heatmap
+
+attn_without_scaling, attn_with_scaling = compute_attention(d_k_heatmap, 1, sequence_length)
+
+# Plot heatmaps
+plt.subplot(1, 2, 1)
+sns.heatmap(attn_without_scaling[0].detach().numpy(), annot=True, fmt='.2f', cmap='Blues')
+plt.title(f'Attention Weights Without Scaling (d_k={d_k_heatmap})', fontsize=12)
+
+plt.subplot(1, 2, 2)
+sns.heatmap(attn_with_scaling[0].detach().numpy(), annot=True, fmt='.2f', cmap='Blues')
+plt.title(f'Attention Weights With Scaling (d_k={d_k_heatmap})', fontsize=12)
+
+plt.tight_layout()
+
+# Plot 4: Attention distributions across dimensions (boxplot)
+plt.figure(figsize=(14, 7))
+
+# Prepare data for boxplot
+boxplot_data = []
+boxplot_labels = []
+
+for d_k in [8, 64, 512]:  # Select a few dimensions for clarity
+    attn_without_scaling, attn_with_scaling = compute_attention(d_k, 50, sequence_length)
+    
+    # Convert to numpy arrays for easier plotting
+    without_scaling_flat = attn_without_scaling.reshape(-1).detach().numpy()
+    with_scaling_flat = attn_with_scaling.reshape(-1).detach().numpy()
+    
+    boxplot_data.append(without_scaling_flat)
+    boxplot_data.append(with_scaling_flat)
+    
+    boxplot_labels.append(f'Without\nd_k={d_k}')
+    boxplot_labels.append(f'With\nd_k={d_k}')
+
+# Create boxplot
+plt.boxplot(boxplot_data, labels=boxplot_labels, patch_artist=True,
+            boxprops=dict(facecolor='lightblue', color='blue'),
+            flierprops=dict(marker='o', markerfacecolor='red', markersize=3))
+
+plt.ylabel('Attention Weight Values', fontsize=12)
+plt.title('Distribution of Attention Weights With and Without Scaling', fontsize=14)
+plt.grid(axis='y', linestyle='--', alpha=0.7)
+
+plt.show()
+
+# Print the theoretical maximum entropy for reference
+print(f"\nTheoretical maximum entropy for sequence length {sequence_length}: {max_entropy:.4f}")
+```
+
+In the last figure, Distribution of Attention Weights with and without scaling, you can see how as the dimensions increase ($d_k$), we get flattened in our distribution of attention weight values without scaling. While with scaling, the distribution remains stable regardless of the number of dimensions. 
+:::
+
+Looking at computing the context vector, the final step of the process, it is the weighted sum over the value vectors. This mirrors the previous section where the context vector was the weighted sum over the input vectors. Here the attention weights serve as a weighting factor that weights the respective importance of each value vector. 
+
+```{python}
+context_vec_2 = attn_weights_2 @ values
+print(context_vec_2)
+```
+
+![Summary of self-attention computation for $x^{(2)}$](C3_Context_Vector_Single_Word.png){.lightbox, #fig-selfattention_single}
+
+To summarize the steps, see Figure @fig-selfattention_single, where there are inputs $x^{(i)} \forall i \in \mathcal{T}$ in a set of inputs/words ($\mathcal{T}$). Specifically the second input ($i=2$) $x^{(2)}$ multiplied by the query ($W_q$), key ($W_k$), and value ($W_v$) weight matrices to get their respective vectors for each input $q^{(i)}$, $k^{(i)}$, and $v^{(i)}$. The attention scores ($\omega_{2i} \forall i \in \mathcal{T}$) are computed by using the dot product of the query vector of the second word $q^{(2)}$ with the value vectors for all other words $v^{(i)}$. The attention scores are normalized using the softmax function (with scaling by square root of the input dimension of the keys $d_k$) to obtain the attention weights $\alpha_{2i} \ \ \forall i \in \mathcal{T}$. Finally, the dot product between the attention weights  $\alpha_{2i} \ \ \forall i \in \mathcal{T}$ and the value vectors $v^{(i)} \forall i \in \mathcal{T}$ is computed to get the context vector $z^{(2)}$. 
+
+### 3.4.2 Implementing a compact self-attention Python class
+Organizing these steps into a Python class: 
+
+```{python}
+import torch.nn as nn
+class SelfAttention_v1(nn.Module): # inherit nn.Module for building model layers
+    def __init__(self, d_in, d_out): # d_in is dimensions of embedding from tokenization/embedding layer, d_out is desired output embedding
+        super().__init__()
+        # Initialize weight matrices
+        self.W_query = nn.Parameter(torch.rand(d_in, d_out)) # d_in X d_out matrices 
+        self.W_key = nn.Parameter(torch.rand(d_in, d_out))
+        self.W_value = nn.Parameter(torch.rand(d_in, d_out))
+    # Forward pass (inputs with parameters computation)
+    def forward(self, x):
+        queries = x @ self.W_query
+        keys = x @ self.W_key
+        values = x @ self.W_value
+        attn_scores = queries @ keys.T # omega_{ij} i is row, column is j
+        attn_weights = torch.softmax(
+            attn_scores / keys.shape[-1]**0.5, dim = -1
+        )
+        context_vec = attn_weights @ values
+        return context_vec
+
+torch.manual_seed(123)
+sa_v1 = SelfAttention_v1(d_in, d_out)
+print(sa_v1(inputs)) # Ouput 6 x 2 (d_out) for the six observations we provided
+```
+
+A summary of the entire operation can be found in @fig-selfattention_all. 
+
+![Summary of self-attention computation for all inputs $x^{(i)} \forall i \in \mathcal{T}$](C3_Context_Vector_All_Words.png){.lightbox, #fig-selfattention_all}
+
+Notice that the trainable portion of this entire procedure is just the weight matrices $W_q$, $W_k$, and $W_v$. These matrices transform the data into queries, keys, and values to be operated on during the attention mechanism. 
+
+This can be improved by using the `nn.Linear` layers from PyTorch which effectively perform matrix multiplication when the bias units are disabled. Using `nn.Linear` also provides an optimized weight initialization scheme compared to `nn.Parameter(torch.rand(...))`. 
+
+
+```{python}
+class SelfAttention_v2(nn.Module):
+    def __init__(self, d_in, d_out, qkv_bias = False):
+        super().__init__()
+        self.W_query = nn.Linear(d_in, d_out, bias = qkv_bias)
+        self.W_key = nn.Linear(d_in, d_out, bias = qkv_bias)
+        self.W_value = nn.Linear(d_in, d_out, bias = qkv_bias)
+    def forward(self, x):
+        queries = self.W_query(x)
+        keys = self.W_key(x)
+        values = self.W_value(x)
+        attn_scores = queries @ keys.T
+        attn_weights = torch.softmax(
+            attn_scores / keys.shape[-1]**0.5, dim = -1
+        )
+        context_vec = attn_weights @ values
+
+        return context_vec
+
+sa_v2 = SelfAttention_v2(d_in, d_out, False)
+sa_v2(inputs)
+
+torch.manual_seed(789)
+sa_v2 = SelfAttention_v2(d_in, d_out)
+print(sa_v2(inputs))
+```
+
+::: {.callout-note collapse="true"}
+## Exercise 3.1 Comparing SelfAttention_v1 and SelfAttention_v2
+Notice the different weight initialization schemes between the two linear layer methods, which produce different results. To check both implementations, the weights from either weight matrices can be transferred to each other. 
+
+The task is to reassign the weights from `SelfAttention_v2` to the weight matrices in `SelfAttention_v1`. If it works correctly, then both instances should produce the same results. 
+
+```{python}
+sa_v1.W_query.data = sa_v2.W_query.weight.T.data.clone()
+sa_v1.W_key.data = sa_v2.W_key.weight.T.data.clone()
+sa_v1.W_value.data = sa_v2.W_value.weight.T.data.clone()
+
+print(sa_v1(inputs))
+print(sa_v2(inputs))
+```
+
+:::
+
+## 3.5 Hiding future words with causal attention
+On page 75 (95 on pdf). 
