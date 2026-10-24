@@ -10,3 +10,7 @@ dependencies = [
     "matplotlib",
     "seaborn",
 ]
+
+[tool.pyrefly]
+# Quarto files aren't pure Python; their ``` fences are parse errors
+project-excludes = ["**/*.qmd", "**/.venv/**"]

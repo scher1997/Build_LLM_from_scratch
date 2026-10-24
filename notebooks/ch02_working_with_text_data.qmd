@@ -5,6 +5,12 @@ execute:
     error: true
 ---
 
+```{python}
+from pathlib import Path
+import os
+os.getcwd()
+```
+
 # 2 - Working with Text Data
 
 ## 2.1 Understanding word embeddings
@@ -16,7 +22,10 @@ We need to understand that LLMs cannot process raw text directly and instead nee
 Before creating embeddings however, text data requires a preprocessing step to create tokens which is how we split input text up into pieces for an embedding layer. To summarize, we split an input text into individual tokens, which are either words or special characters, such as punctuation characters. These are later converted into token IDs (like a lookup table) which are then used to create embeddings.
 
 ```{python}
-with open('../data/raw/the_verdict.txt', 'r',encoding='utf_8') as f:
+# Works from the project root (IDE) and from notebooks/ (quarto render)
+DATA_DIR = Path("data/raw") if Path("data/raw").exists() else Path("../data/raw")
+path = DATA_DIR / "the_verdict.txt"
+with path.open("r", encoding="utf-8") as f:
     raw_text = f.read()
 
 print('Total number of characters:', len(raw_text))
@@ -308,7 +317,7 @@ print(tokenizer.decode(tokenizer.encode('Akwirw ier')))
 Let's implement a data loader that fetches the input-target pairs from the training dataset using a sliding window approach. Basically since the next word is always being predicted the window includes all the text "it has seen", then receieves the next word for the prediction, then at the next iteration that predicted word is revealed and added to the input window.
 
 ```{python}
-with open('../data/raw/the_verdict.txt','r',encoding='utf-8') as f:
+with open(DATA_DIR / 'the_verdict.txt','r',encoding='utf-8') as f:
     raw_text = f.read()
 
 enc_text = tokenizer.encode(raw_text)
@@ -336,6 +345,7 @@ for i in range(1, context_size+1):
     print(context,'---->',desired)
     print(tokenizer.decode(context),'---->',tokenizer.decode([desired]))
 ```
+
 Ok so these two concepts need to be implemented into a PyTorch data loader so there needs to be an `x` tensor which is the length of the context size and the `y` tensor which are the targets (`x` shifted over 1) which are also the length of the context size. 
 
 ```{python}
@@ -382,7 +392,7 @@ def create_dataloader_v1(txt, batch_size = 4, max_length = 256, stride= 128, shu
 Testing the `dataloader` with a batch size of 1 for an LLM with a context size of 4 to develop an intuition of how the `GPTDatasetV1` class from listing 2.5 and the `create_dataloader_v1` function work together.
 
 ```{python}
-with open('../data/raw/the_verdict.txt','r',encoding='utf-8') as f:
+with open(DATA_DIR / 'the_verdict.txt','r',encoding='utf-8') as f:
     raw_text = f.read()
 
 dataloader = create_dataloader_v1(
@@ -391,6 +401,7 @@ data_iter = iter(dataloader)
 first_batch = next(data_iter)
 print(first_batch)
 ```
+
 `first_batch` variable is two tensors: the first stores the input token IDs and the second contains the target token IDs. Since the `max_length` is set of 4, each of the two tensors is length 4. Typically an LLM is trained on inputs of size 256 and up. 
 
 The `stride` is how much each batch is shifted from each other.
@@ -457,6 +468,7 @@ Assume you begin with the following input token with IDs 2,3,5, and 1.
 ```{python}
 input_ids = torch.tensor([2,3,5,1])
 ```
+
 Then the vocabularly is small with only 6 words (BPE has 50,257) and create embeddings of size 3 (in GPT-3 the embedding size is 12,288 dimensions)
 
 ```{python}
@@ -510,6 +522,7 @@ vocab_size = 50257
 output_dim = 256
 token_embedding_layer = torch.nn.Embedding(vocab_size, output_dim)
 ```
+
 Using `token_embedding_layer`, sampling data from the data loader, this will embed each token in each batch into a 256-dimensional vector. With a batch size of eight with four tokens each, the resulting tensor is 8 $\times$ 4 $\times$ 256 tensor. 
 
 ```{python}
@@ -540,6 +553,7 @@ pos_embedding_layer = torch.nn.Embedding(context_length, output_dim)
 pos_embeddings = pos_embedding_layer(torch.arange(context_length)) 
 print(pos_embeddings.shape)
 ```
+
 Now the `pos_embeddings` can be added directly to each of the eight batches. 
 
 ```{python}

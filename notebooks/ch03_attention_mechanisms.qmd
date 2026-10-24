@@ -136,6 +136,7 @@ key_2 = x_2@W_key
 value_2 = x_2@W_value
 print(query_2)
 ```
+
 ::: {.callout-note}
 ## Weight parameters vs. attention weights
 The ``weights'' in the former blocks are the values of a neural network which are optimized during training. Attention weights determine the extent to which aa context vector depends on the different parts of the input. Simply put, the weights are learned coefficients and the attention weights are dynamic, context-specific values.  For example, the weights relate to a traditional fully connected multi-layer perceptron, while attention weights are the outputs after the weights are used to get attention scores and then normalized via softmax.  
@@ -151,6 +152,7 @@ values = inputs @ W_value
 print('Shape of all keys vectors',keys.shape)
 print('Shape of all values vectors',values.shape)
 ```
+
 Now get the attention scores, starting with $\omega_{22}$
 
 ```{python}
@@ -158,12 +160,14 @@ keys_2 = keys[1]
 attn_score_22 = query_2 @ keys_2
 print(attn_score_22)
 ```
+
 Generalized to all attention scores. We have our query vector [1 x 2], and a matrix (multiple row vectors) where its a [6 x 2] and each row represents an input. So we want the scores for all these keys vectors (inputs) against our query input. So let's transpose the keys matrix so the output is a [1 x 6] where they're the attention scores for each of the six inputs. 
 
 ```{python}
 attn_scores_2 = query_2 @ keys.T
 print(attn_scores_2)
 ```
+
 Then converting them to attention weights by utilizing the softmax function. However, now we scale the attention scores by dividing them by the square root of the embedding dimension of the keys. This is the scaling of the ``scaled'' dot product attention mechanism. 
 
 ```{python}
@@ -254,6 +258,7 @@ print("\nAttended values WITH scaling:")
 print(attended_values_with_scaling)
 
 ```
+
 This only gets worse in higher dimensions because these dot products would be summing over 512 or 1024 or even higher terms. 
 ```{python}
 # To make the difference more obvious, let's try a higher dimension
@@ -318,7 +323,7 @@ import numpy as np
 import seaborn as sns
 
 # Set style for better visuals
-plt.style.use('seaborn')
+# plt.style.use('seaborn')
 sns.set_palette("viridis")
 
 # Function to compute attention weights with and without scaling
@@ -446,7 +451,7 @@ for d_k in [8, 64, 512]:  # Select a few dimensions for clarity
     boxplot_labels.append(f'With\nd_k={d_k}')
 
 # Create boxplot
-plt.boxplot(boxplot_data, labels=boxplot_labels, patch_artist=True,
+plt.boxplot(boxplot_data, label=boxplot_labels, patch_artist=True,
             boxprops=dict(facecolor='lightblue', color='blue'),
             flierprops=dict(marker='o', markerfacecolor='red', markersize=3))
 
