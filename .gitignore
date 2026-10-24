@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+
+# Environments
+.venv/
+*.env
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Data & outputs (reproducible — don't commit)
+data/processed/
+reports/
+results/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Quarto render output (regenerate with quarto render)
+notebooks/*.html
+notebooks/*_files/
+.quarto/

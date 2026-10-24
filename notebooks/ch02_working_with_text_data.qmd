@@ -16,7 +16,7 @@ We need to understand that LLMs cannot process raw text directly and instead nee
 Before creating embeddings however, text data requires a preprocessing step to create tokens which is how we split input text up into pieces for an embedding layer. To summarize, we split an input text into individual tokens, which are either words or special characters, such as punctuation characters. These are later converted into token IDs (like a lookup table) which are then used to create embeddings.
 
 ```{python}
-with open('the_verdict.txt', 'r',encoding='utf_8') as f:
+with open('../data/raw/the_verdict.txt', 'r',encoding='utf_8') as f:
     raw_text = f.read()
 
 print('Total number of characters:', len(raw_text))
@@ -308,7 +308,7 @@ print(tokenizer.decode(tokenizer.encode('Akwirw ier')))
 Let's implement a data loader that fetches the input-target pairs from the training dataset using a sliding window approach. Basically since the next word is always being predicted the window includes all the text "it has seen", then receieves the next word for the prediction, then at the next iteration that predicted word is revealed and added to the input window.
 
 ```{python}
-with open('the_verdict.txt','r',encoding='utf-8') as f:
+with open('../data/raw/the_verdict.txt','r',encoding='utf-8') as f:
     raw_text = f.read()
 
 enc_text = tokenizer.encode(raw_text)
@@ -382,7 +382,7 @@ def create_dataloader_v1(txt, batch_size = 4, max_length = 256, stride= 128, shu
 Testing the `dataloader` with a batch size of 1 for an LLM with a context size of 4 to develop an intuition of how the `GPTDatasetV1` class from listing 2.5 and the `create_dataloader_v1` function work together.
 
 ```{python}
-with open('the_verdict.txt','r',encoding='utf-8') as f:
+with open('../data/raw/the_verdict.txt','r',encoding='utf-8') as f:
     raw_text = f.read()
 
 dataloader = create_dataloader_v1(
@@ -549,7 +549,7 @@ print(input_embeddings.shape)
 
 To summarize the work done in this chapter. The input embedding pipeline before the decoder-only transformer begins its operations.
 
-![Summary of Input Embedding Pipeline](C2_Summary_Picture.png){.lightbox}
+![Summary of Input Embedding Pipeline](images/C2_Summary_Picture.png){.lightbox}
 
 # Summary
  - LLMs require textual data to be converted into numerical vectors, known as embeddings since they can't process raw text. Embeddings transform discrete data into continuous vector spaces, making them compatable with neural network operations. 

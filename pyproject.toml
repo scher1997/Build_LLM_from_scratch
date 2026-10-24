@@ -1,0 +1,12 @@
+[project]
+name = "build-llm-from-scratch"
+version = "0.1.0"
+description = "Follow-along notebooks for Build a Large Language Model (From Scratch) by Sebastian Raschka"
+requires-python = ">=3.12"
+dependencies = [
+    "torch",
+    "tiktoken",
+    "numpy",
+    "matplotlib",
+    "seaborn",
+]

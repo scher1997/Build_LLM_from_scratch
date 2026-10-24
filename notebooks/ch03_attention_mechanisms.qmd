@@ -470,7 +470,7 @@ context_vec_2 = attn_weights_2 @ values
 print(context_vec_2)
 ```
 
-![Summary of self-attention computation for $x^{(2)}$](C3_Context_Vector_Single_Word.png){.lightbox, #fig-selfattention_single}
+![Summary of self-attention computation for $x^{(2)}$](images/C3_Context_Vector_Single_Word.png){.lightbox, #fig-selfattention_single}
 
 To summarize the steps, see Figure @fig-selfattention_single, where there are inputs $x^{(i)} \forall i \in \mathcal{T}$ in a set of inputs/words ($\mathcal{T}$). Specifically the second input ($i=2$) $x^{(2)}$ multiplied by the query ($W_q$), key ($W_k$), and value ($W_v$) weight matrices to get their respective vectors for each input $q^{(i)}$, $k^{(i)}$, and $v^{(i)}$. The attention scores ($\omega_{2i} \forall i \in \mathcal{T}$) are computed by using the dot product of the query vector of the second word $q^{(2)}$ with the value vectors for all other words $v^{(i)}$. The attention scores are normalized using the softmax function (with scaling by square root of the input dimension of the keys $d_k$) to obtain the attention weights $\alpha_{2i} \ \ \forall i \in \mathcal{T}$. Finally, the dot product between the attention weights  $\alpha_{2i} \ \ \forall i \in \mathcal{T}$ and the value vectors $v^{(i)} \forall i \in \mathcal{T}$ is computed to get the context vector $z^{(2)}$. 
 
@@ -505,7 +505,7 @@ print(sa_v1(inputs)) # Ouput 6 x 2 (d_out) for the six observations we provided
 
 A summary of the entire operation can be found in @fig-selfattention_all. 
 
-![Summary of self-attention computation for all inputs $x^{(i)} \forall i \in \mathcal{T}$](C3_Context_Vector_All_Words.png){.lightbox, #fig-selfattention_all}
+![Summary of self-attention computation for all inputs $x^{(i)} \forall i \in \mathcal{T}$](images/C3_Context_Vector_All_Words.png){.lightbox, #fig-selfattention_all}
 
 Notice that the trainable portion of this entire procedure is just the weight matrices $W_q$, $W_k$, and $W_v$. These matrices transform the data into queries, keys, and values to be operated on during the attention mechanism. 
 
